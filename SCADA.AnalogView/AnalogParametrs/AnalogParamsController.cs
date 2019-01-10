@@ -20,10 +20,36 @@ namespace SCADA.AnalogView.AnalogParametrs
 
         AnalogValue analogValue;                // текущие значение параметра
 
-        IDBWriter DBWriter;                     // объект для записи в базу данных
+        CommonAnalogParams commonParams;        // общие параметры аналогового сигнала
+
+        IDBWorker DBWorker;                     // Объект для чтения/записи из / в базы данных
+        IPLCAnalogValueReader PLCValueReader;   // Объект для чтения из контроллера значений аналогового сигнала
+        IPLCAnalogValueWriter PLCValueWriter;   // Объект для записи команд управления аналоговым параметром
+        IPLCAnalogUstavki PLCUstavki;           // Объект для чтения / записи уставок из / в контроллер
+
+        public AnalogParamsController(IAnalogServiceBuilder builder)
+        {
+            DBWorker = builder.DBWorker;
+            //  PLCValueReader = builder.PLCValueReader;
+            //   PLCUstavki = builder.PLCUstavki;
+            //  PLCValueWriter = builder.PLCValueWriter;
+
+            UstavkiRead();
+
+        }
+
+
+        void UstavkiRead()
+        {
+            dataBaseUstavki = new UstavkiContainer();
+            commonParams = new CommonAnalogParams();
+            DBWorker.ReadUstavki(ref dataBaseUstavki ,ref commonParams);
+
+        }
+
 
         /// <summary>
-        /// Событие изменения выьранного контейнера для работы с уставками
+        /// Событие изменения выбранного контейнера для работы с уставками
         /// </summary>
         public event UstConteinerChanged OnUstConteinerChanged;
 

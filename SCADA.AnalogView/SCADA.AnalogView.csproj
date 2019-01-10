@@ -75,17 +75,23 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
-    <Compile Include="AnalogParametrs\AnalogInterfaces\IDBReader.cs" />
-    <Compile Include="AnalogParametrs\AnalogInterfaces\iDBWriter.cs" />
+    <Compile Include="AnalogParametrs\AnalogInterfaces\IAnalogServiceBuilder.cs" />
+    <Compile Include="AnalogParametrs\AnalogInterfaces\IDBWorker.cs" />
+    <Compile Include="AnalogParametrs\AnalogInterfaces\IPLCAnalogUstavki.cs" />
+    <Compile Include="AnalogParametrs\AnalogInterfaces\IPLCAnalogValueReader.cs" />
+    <Compile Include="AnalogParametrs\AnalogInterfaces\IPLCAnalogValueWriter.cs" />
     <Compile Include="AnalogParametrs\AnalogParamsController.cs" />
     <Compile Include="AnalogParametrs\AnalogValue.cs" />
     <Compile Include="AnalogParametrs\CommonAnalogParams.cs" />
     <Compile Include="AnalogParametrs\UstavkiContainer.cs" />
     <Compile Include="AnalogParametrs\UstValue.cs" />
+    <Compile Include="AnalogServiceBuilder\AnalogServiceBuilder.cs" />
     <Compile Include="App.xaml.cs">
       <DependentUpon>App.xaml</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="ConfigurationWorker\ConfigurationWorker.cs" />
+    <Compile Include="DBWorker\DBWorker.cs" />
     <Compile Include="MainWindow.xaml.cs">
       <DependentUpon>MainWindow.xaml</DependentUpon>
       <SubType>Code</SubType>

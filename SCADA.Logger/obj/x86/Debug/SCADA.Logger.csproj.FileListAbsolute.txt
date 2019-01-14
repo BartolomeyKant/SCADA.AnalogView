@@ -1,0 +1,6 @@
+Z:\Documents\Programming\C#\SCADA.AnalogView\SCADA.AnalogView\SCADA.Logger\bin\x86\Debug\SCADA.Logger.dll
+Z:\Documents\Programming\C#\SCADA.AnalogView\SCADA.AnalogView\SCADA.Logger\bin\x86\Debug\SCADA.Logger.pdb
+Z:\Documents\Programming\C#\SCADA.AnalogView\SCADA.AnalogView\SCADA.Logger\obj\x86\Debug\SCADA.Logger.csprojAssemblyReference.cache
+Z:\Documents\Programming\C#\SCADA.AnalogView\SCADA.AnalogView\SCADA.Logger\obj\x86\Debug\SCADA.Logger.csproj.CoreCompileInputs.cache
+Z:\Documents\Programming\C#\SCADA.AnalogView\SCADA.AnalogView\SCADA.Logger\obj\x86\Debug\SCADA.Logger.dll
+Z:\Documents\Programming\C#\SCADA.AnalogView\SCADA.AnalogView\SCADA.Logger\obj\x86\Debug\SCADA.Logger.pdb

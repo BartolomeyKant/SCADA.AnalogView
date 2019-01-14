@@ -18,6 +18,9 @@ namespace SCADA.AnalogView.AnalogParametrs
         public bool Different { get; set; }
 
         public string UstName { get; set; }
+        public string Egu { get; set; }
+
+        public byte Format { get; set; }
 
         // пустой конструктор
         public UstValue() { }
@@ -27,11 +30,13 @@ namespace SCADA.AnalogView.AnalogParametrs
         /// </summary>
         /// <param name="value">занчение уставки</param>
         /// <param name="used">уставка используется или нет</param>
-        public UstValue(float value, bool used, string ustname)
+        public UstValue(float value, bool used, string ustname, string egu, byte format)
         {
             Value = value;
             Used = used;
             UstName = ustname;
+            Egu = egu;
+            Format = format;
         }
 
         // для выполнения сравнения с другими уставками
@@ -44,6 +49,10 @@ namespace SCADA.AnalogView.AnalogParametrs
                     return 1;
                 }
                 else if (Value < val.Value)
+                {
+                    return -1;
+                }
+                else if (Used != val.Used)
                 {
                     return -1;
                 }
@@ -67,7 +76,9 @@ namespace SCADA.AnalogView.AnalogParametrs
                 Used = this.Used,
                 Changed = this.Changed,
                 Different = this.Different,
-                UstName = this.UstName
+                UstName = this.UstName,
+                Egu = this.Egu,
+                Format = this.Format
             };
         }
     }

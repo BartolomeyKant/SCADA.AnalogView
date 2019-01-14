@@ -17,7 +17,7 @@ namespace SCADA.AnalogView.AnalogParametrs.AnalogInterfaces
         /// Чтение уставок из контроллера
         /// </summary>
         /// <param name="ustavkiContainer">ссылка на контейнер уставок</param>
-        void GetPLCUstavki(out UstavkiContainer ustavkiContainer);
+        void GetPLCUstavki(ref UstavkiContainer ustavkiContainer);
         /// <summary>
         /// Запись уставок в контроллер
         /// </summary>

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace SCADA.Logging
@@ -43,6 +44,8 @@ namespace SCADA.Logging
 
         static FileInfo logFile;
         static StreamWriter writter;
+
+        static object locker;
 
         /// <summary>
         /// Инициализация логгера
@@ -92,20 +95,24 @@ namespace SCADA.Logging
                     break;
             }
 
-            Task.Factory.StartNew(PrintLogs);
-
-
+            locker = new object();
         }
         /// <summary>
         /// добавление нового сообщения для печати логов
         /// </summary>
         /// <param name="message">сообщение в лог</param>
-        public static void AddMessages(string message)
+        public async static void AddMessages(string message)
         {
             if (DebugLevel == DebugLevel.All)
             {
                 Exception exc = new Exception(message);
-                messages.Enqueue(exc);
+                await Task.Run(() =>                // ассинхронный запуск функции печати сообщения в лог
+                {
+                    lock (locker)
+                    {
+                        PrintLog(exc);
+                    }
+                });
             }
         }
 
@@ -113,77 +120,75 @@ namespace SCADA.Logging
         /// добавление нового предупреждающего сообщения для печати логов
         /// </summary>
         /// <param name="message">сообщение в лог</param>
-        public static void AddWarning(string message)
+        public async static void AddWarning(string message)
         {
             if (DebugLevel == DebugLevel.All || DebugLevel == DebugLevel.Warnings)
             {
                 Exception exc = new Exception(message);
-                warnings.Enqueue(exc);
+
+                lock (locker)
+                {
+                    PrintLog(exc);
+                }
             }
         }
         /// <summary>
         /// доьбавление нового предупреждающего сообщения для печати логов
         /// </summary>
         /// <param name="exception">исключение для передачи в лог</param>
-        public static void AddWarning(Exception exception)
+        public async static void AddWarning(Exception exception)
         {
             if (DebugLevel == DebugLevel.All || DebugLevel == DebugLevel.Warnings)
             {
-                warnings.Enqueue(exception);
+                await Task.Run(() =>                // ассинхронный запуск функции печати сообщения в лог
+                {
+                    lock (locker)
+                    {
+                        PrintLog(exception);
+                    }
+                });
             }
         }
         /// <summary>
         /// добавление нового сообщения ошибки для печати в лог
         /// </summary>
         /// <param name="exception">исключение для печати в лог</param>
-        public static void AddError(Exception exception)
+        public async  static void AddError(Exception exception)
         {
             if (DebugLevel == DebugLevel.All || DebugLevel == DebugLevel.Warnings || DebugLevel == DebugLevel.Errors)
             {
-                errors.Enqueue(exception);
+                await Task.Run(() =>                // ассинхронный запуск функции печати сообщения в лог
+                {
+                    lock (locker)
+                    {
+                        PrintLog(exception);
+                    }
+                });
             }
         }
 
-        /// <summary>
-        /// функция печати сообщений из очередей
-        /// </summary>
-        async static void PrintLogs()
+        static void PrintLog(Exception exc)
         {
             while (true)
             {
                 try
                 {
                     writter = logFile.AppendText();
+                    break;
                 }
                 catch (IOException e)               // если ошибка ввода-вывод, то пробем еще раз
                 {
-                    await Task.Delay(100);
+                    Thread.Sleep(10);
                     continue;
                 }
                 catch (Exception e)                 // если ошибка другая, то пробуем пробросить наверх
                 {
                     throw e;
                 }
-                //получение сообщений
-                while (messages != null && messages.Count != 0)
-                {
-                    printExsceptionToFile(messages.Dequeue());
-                }
-
-                // получение предупреждений
-                while (warnings != null && warnings.Count != 0)
-                {
-                    printExsceptionToFile(warnings.Dequeue());
-                }
-
-                // получение ошибок
-                while (errors != null && errors.Count != 0)
-                {
-                    printExsceptionToFile(errors.Dequeue());
-                }
-                writter.Close();            // закрываем поток, чтобы другие могли открыть
-                await Task.Delay(500);
             }
+            // после получения writter записываем в файл
+            printExsceptionToFile(exc);
+            writter.Close();
         }
         // печать сообщений в файл логов
         static void printExsceptionToFile(Exception exc)

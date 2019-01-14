@@ -16,6 +16,10 @@ namespace SCADA.AnalogView.AnalogParametrs
         public uint ControllerIndex { get; set; }
         public uint DBIndex { get; set; }
 
+        public string Egu;
+
+        public string AdcEgu;
+
         public byte format { get; set; }
 
     }

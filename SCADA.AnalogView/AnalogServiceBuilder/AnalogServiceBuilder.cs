@@ -16,11 +16,12 @@ namespace SCADA.AnalogView
         IDBWorker dbWorker;
         IDBWorker IAnalogServiceBuilder.DBWorker => dbWorker;
 
-        IPLCAnalogUstavki IAnalogServiceBuilder.PLCUstavki => throw new NotImplementedException();
+        OPCDAWorker opcDAWorker;
+        IPLCAnalogUstavki IAnalogServiceBuilder.PLCUstavki => opcDAWorker;
 
-        IPLCAnalogValueReader IAnalogServiceBuilder.PLCValueReader => throw new NotImplementedException();
+        IPLCAnalogValueReader IAnalogServiceBuilder.PLCValueReader => opcDAWorker;
 
-        IPLCAnalogValueWriter IAnalogServiceBuilder.PLCValueWriter => throw new NotImplementedException();
+        IPLCAnalogValueWriter IAnalogServiceBuilder.PLCValueWriter => opcDAWorker;
 
         public AnalogServiceBuilder(ConfigurationWorker configuration)
         {
@@ -34,9 +35,17 @@ namespace SCADA.AnalogView
                 Logger.AddError(e);
                 return;
             }
-            Logger.AddMessages($"Для чтения из базы данных задан тег - '{configuration.ReadingTag}'");
-            dbWorker.SetDBTag(configuration.ReadingTag);
 
+            try
+            {
+                Logger.AddMessages("Создание объекта для работы с OPC DA сервером");
+                opcDAWorker = new OPCDAWorker(configuration.OPCServerName);
+            }
+            catch (Exception e)
+            {
+                Logger.AddError(e);
+                return;
+            }
         }
     }
 }

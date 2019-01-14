@@ -26,6 +26,6 @@ namespace SCADA.AnalogView.AnalogParametrs.AnalogInterfaces
         /// метод для записи уставок в базу данных
         /// </summary>
         /// <param name="ustavkiContainer">ссылка на текущий актуальный контейнер уставок</param>
-        void WriteUstavki(UstavkiContainer ustavkiContainer);
+        void WriteUstavki(UstavkiContainer ustavkiContainer, CommonAnalogParams commonParams);
     }
 }

@@ -21,5 +21,12 @@ namespace SCADA.AnalogView
         public string ADCTag { get; set; }
         public string ValueTag { get; set; }
         public string AnalogStateTag { get; set; }
+
+        public string OPCServerName { get; set; }
+        public string Indexator { get; set; }
+        public string[] UstavkiTags { get; set; }
+
+        
+
     }
 }

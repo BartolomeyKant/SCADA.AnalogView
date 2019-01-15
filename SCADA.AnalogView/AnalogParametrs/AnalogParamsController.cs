@@ -16,7 +16,11 @@ namespace SCADA.AnalogView.AnalogParametrs
     class AnalogParamsController
     {
 
-        Thread UstavkiReadingThread;
+
+        /// <summary>
+        /// Событие изменения выбранного контейнера для работы с уставками
+        /// </summary>
+        public event UstConteinerChanged OnUstConteinerChanged;
 
         // Объект конфигурации 
         ConfigurationWorker configuration;
@@ -109,12 +113,173 @@ namespace SCADA.AnalogView.AnalogParametrs
             });
         }
 
+        /// <summary>
+        ///  Процедура записи уставок в базу данных и в контроллер
+        /// </summary>
+        public async void WriteUstavki()
+        {
+            // Определение наличия уставок которые можно записать
+            bool flIsChangedOrDiffValues = false;
+            // технологические уставки
+            for (int i = 0; i < 12; i++)
+            {
+                flIsChangedOrDiffValues = flIsChangedOrDiffValues || (Ustavki.UstValues[i].Changed || Ustavki.UstValues[i].Different);
+            }
+            // общие уставки
+            flIsChangedOrDiffValues = flIsChangedOrDiffValues || (Ustavki.ADCMax.Changed || Ustavki.ADCMax.Different);
+            flIsChangedOrDiffValues = flIsChangedOrDiffValues || (Ustavki.ADCMin.Changed || Ustavki.ADCMin.Different);
+            flIsChangedOrDiffValues = flIsChangedOrDiffValues || (Ustavki.EMax.Changed || Ustavki.EMax.Different);
+            flIsChangedOrDiffValues = flIsChangedOrDiffValues || (Ustavki.EMin.Changed || Ustavki.EMin.Different);
+            flIsChangedOrDiffValues = flIsChangedOrDiffValues || (Ustavki.VPD.Changed || Ustavki.VPD.Different);
+            flIsChangedOrDiffValues = flIsChangedOrDiffValues || (Ustavki.NPD.Changed || Ustavki.NPD.Different);
+            flIsChangedOrDiffValues = flIsChangedOrDiffValues || (Ustavki.Hister.Changed || Ustavki.Hister.Different);
+
+            // если есть изменения или были отличия с архивом выолняем запис уставок
+            if (flIsChangedOrDiffValues)
+            {
+                // Запись в базу данных и контроллер выполняется ассинхронно
+                // Запись в базу данных
+                await Task.Run(() =>
+                {
+                    try
+                    {
+                        Logger.AddMessages("Запись уставовк в базу данных");
+                        DBWorker.WriteUstavki(Ustavki, commonParams);
+                    }
+                    catch (Exception e)
+                    {
+                        Logger.AddError(e);
+                        throw new UserMessageException("При записи уставок в базу данных возникло исключение", e);
+                    }
+                });
+                // Запись в контроллер
+                await Task.Run(() =>
+                {
+                    try
+                    {
+                        Logger.AddMessages("Запись уставок в контроллер");
+                        PLCUstavki.SetPLCUstavki(Ustavki);
+                    }
+                    catch (Exception e)
+                    {
+                        Logger.AddError(e);
+                        throw new UserMessageException("При запсии уставок в контроллер возникло исключение", e);
+                    }
+                });
+                // Сброс флагов состояния уставок
+                Ustavki.ClearState();
+                // Переописание уставок и повторное сравнение
+                if (Ustavki == plcUstavki)
+                {
+                    dataBaseUstavki = (UstavkiContainer)plcUstavki.Clone();
+                }
+                else
+                {
+                    plcUstavki = (UstavkiContainer)dataBaseUstavki.Clone();
+                }
+                plcUstavki.Compare(dataBaseUstavki);
+            }
+            else
+            {
+                throw new UserMessageException("Нет измененных уставок");
+            }
+        }
 
         /// <summary>
-        /// Событие изменения выбранного контейнера для работы с уставками
+        /// Метод обработки нового значения уставки
         /// </summary>
-        public event UstConteinerChanged OnUstConteinerChanged;
+        /// <param name="newValue">Новое значение</param>
+        /// <param name="ust">Ссылка на объект изменяемой уставки</param>
+        public void SetNewUstValue(float newValue, UstValue ust)
+        {
+            float minValue = -100000;
+            float maxValue = 100000;
+            // проверка значения уставки выполняется в зависимости от кода уставки
+            // присвоение минимального и максимального значения в зависимости от типа уставки
+            switch (ust.UstCode)
+            {
+                case UstCode.ADCMax:
+                    minValue = Ustavki.ADCMin.Value;
+                    maxValue = 100000;
+                    break;
+                case UstCode.ADCMin:
+                    minValue = -100000;
+                    maxValue = Ustavki.ADCMax.Value;
+                    break;
+                case UstCode.EMax:
+                    maxValue = 100000;
+                    minValue = Ustavki.EMin.Value;
+                    for (int i = 11; i >= 0; i--)
+                    {
+                        if (Ustavki.UstValues[i].Used)
+                        {
+                            minValue = Ustavki.UstValues[i].Value;
+                            break;
+                        }
+                    }
+                    break;
+                case UstCode.EMin:
+                    maxValue = Ustavki.EMax.Value;
+                    minValue = -100000;
+                    for (int i = 0; i <= 11; i++)
+                    {
+                        if (Ustavki.UstValues[i].Used)
+                        {
+                            maxValue = Ustavki.UstValues[i].Value;
+                            break;
+                        }
+                    }
+                    break;
+                case UstCode.VPD:
+                    maxValue = 100000;
+                    minValue = Ustavki.NPD.Value;
+                    break;
+                case UstCode.NPD:
+                    maxValue = Ustavki.VPD.Value;
+                    minValue = -100000;
+                    break;
+                case UstCode.Hister:
+                    maxValue = Ustavki.EMax.Value;
+                    minValue = Ustavki.EMin.Value;
+                    break;
+                default:
+                    if ((ust.UstCode < UstCode.ADCMax) && (ust.UstCode > 0))
+                    {
+                        maxValue = Ustavki.EMax.Value;
+                        minValue = Ustavki.EMin.Value;
+                        for (int i = ((int)ust.UstCode) - 2; i >= 0; i--)
+                        {
+                            if (Ustavki.UstValues[i].Used)
+                            {
+                                minValue = Ustavki.UstValues[i].Value;
+                                break;
+                            }
+                        }
+                        for (int i = ((int)ust.UstCode); i <= 11; i++)
+                        {
+                            if (Ustavki.UstValues[i].Used)
+                            {
+                                maxValue = Ustavki.UstValues[i].Value;
+                                break;
+                            }
+                        }
+                    }
+                    else
+                    {
+                        ust.UpdateValue();
+                        throw new Exception($"Задан неверный тип уставки, код - {ust.UstCode}");
+                    }
+                    break;
+            }
+            // -------------------- запись нового значения в объект уставки -------------------------------------------
+            if ((newValue >= minValue) && (newValue <= maxValue))
+                ust.SetNewValue(newValue);
+            else
+            {
+                ust.UpdateValue();
+                throw new UserMessageException($"Значение уставки должно быть в диапазоне от {minValue} до {maxValue}");
+            }
 
-
+        }
     }
 }

@@ -1,25 +1,16 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
 using System.IO;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
 using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
-
 
 using SCADA.Logging;
 using SCADA.AnalogView.AnalogParametrs;
 
 namespace SCADA.AnalogView
 {
+
     /// <summary>
     /// Логика взаимодействия для MainWindow.xaml
     /// </summary>
@@ -71,8 +62,8 @@ namespace SCADA.AnalogView
                 "PLC!arrAIParam[x].UstMax[3]",         //16
                 "PLC!arrAIParam[x].UstMax[4]",         //17
                 "PLC!arrAIParam[x].UstMax[5]",         //18
-                "PLC!arrAIParam[x].UstMax[6]"          //19
-                
+                "PLC!arrAIParam[x].UstMax[6]",         //19
+                "PLC!arrAIParam[x].IsChanged"          //20
                 }
             };
 
@@ -144,12 +135,32 @@ namespace SCADA.AnalogView
 
         void UstavkiFieldKewDown(object sender, KeyEventArgs e)
         {
-            TextBox tb = (TextBox)sender;
             if (e.Key == Key.Enter)
             {
-                ;
+                TextBox tb = (TextBox)sender;
+                UstValue ust = ((UstViewModel)((Grid)tb.Parent).DataContext).Controller;            //получение объекта уставки через дата контекст родительского грида
+                analogView.SetNewUstValue(tb.Text, ust);
             }
         }
 
+        void WriteUstavki(object o, EventArgs e)
+        {
+            analogView.WriteUsts();
+        }
+
+
+        // после загрузки формы
+        private void Window_Loaded(object sender, RoutedEventArgs e)
+        {
+            MessageWindow.ownerWindow = this;
+
+            MessageWindow.ShowMessage("Сообщение 1");
+            MessageWindow.ShowWarning("Предупреждение");
+            MessageWindow.ShowError("Ошибка");
+            MessageWindow.ShowException(new UserMessageException("Ехал грека черех реку",
+                new Exception("Видит грека в реке рак",
+                new Exception("Сунул грека в реку руку",
+                new Exception("Рак за руку грека цап!"))), MessageType.JobDone));
+        }
     }
 }

@@ -18,14 +18,11 @@ namespace SCADA.AnalogView.AnalogParametrs
             {
                 controller = value;
                 format = controller.Format;
-                // вызов события изменения свойств
-                OnPropertyChanged("Value");
-                OnPropertyChanged("OldValue");
-                OnPropertyChanged("Name");
-                OnPropertyChanged("Egu");
-                OnPropertyChanged("Different");
-                OnPropertyChanged("Changed");
+                controller.OnUstValueChangedEvent += ustValueChangedEventHandler;
+                // вызывается обработчик события обновления значений
+                ustValueChangedEventHandler();
             }
+            get { return controller; }
         }
 
         byte format;
@@ -62,6 +59,18 @@ namespace SCADA.AnalogView.AnalogParametrs
         {
             get { return controller.Used;  }
         }
+
+        void ustValueChangedEventHandler()
+        {
+            // вызов события изменения свойств
+            OnPropertyChanged("Value");
+            OnPropertyChanged("OldValue");
+            OnPropertyChanged("Name");
+            OnPropertyChanged("Egu");
+            OnPropertyChanged("Different");
+            OnPropertyChanged("Changed");
+        }
+
 
         // реализация интерфейса INotifyPropertyChanged
         public event PropertyChangedEventHandler PropertyChanged;

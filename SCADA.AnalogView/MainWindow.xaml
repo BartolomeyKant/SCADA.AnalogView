@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:SCADA.AnalogView"
         mc:Ignorable="d"
-        Title="Просмотр значений аналогового параметра" MinHeight="500" MinWidth="700" MaxWidth="1000" WindowStyle="ThreeDBorderWindow" ResizeMode="CanResizeWithGrip">
+        Title="Просмотр значений аналогового параметра" MinHeight="500" MinWidth="700" MaxWidth="1000" WindowStyle="ThreeDBorderWindow" ResizeMode="CanResizeWithGrip" Loaded="Window_Loaded">
     <Window.Resources >
 
         <!--Ресурсы цветов -->
@@ -52,6 +52,9 @@
             <Style.Triggers>
                 <DataTrigger Binding="{Binding Path=Different}" Value="True">
                     <Setter Property="TextBox.Background" Value="{StaticResource DifferentColor}" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Path=Changed}" Value="True">
+                    <Setter Property="TextBox.Background" Value="{StaticResource ChangedColor}" />
                 </DataTrigger>
             </Style.Triggers>
         </Style>
@@ -231,7 +234,7 @@
                         <TextBlock Grid.Row="1" Grid.Column="0" Text="Пол. мин" Style="{StaticResource MiniLable}"/>
                         <TextBlock Grid.Row="1" Grid.Column="1" Text="Пол. макс" Style="{StaticResource MiniLable}"/>
 
-                        <Grid x:Name ="EMax" Grid.Row="2" Grid.Column="0" Style="{StaticResource ValueGrid}">
+                        <Grid x:Name ="ADCMin" Grid.Row="2" Grid.Column="0" Style="{StaticResource ValueGrid}">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="0.7*"/>
                                 <ColumnDefinition Width="0.3*"/>
@@ -239,7 +242,7 @@
                             <TextBox Grid.Column ="0" Style="{StaticResource ValueTextBox}"/>
                             <TextBlock Grid.Column ="1" Style="{StaticResource EguStyle}"/>
                         </Grid>
-                        <Grid x:Name ="EMin" Grid.Row="2" Grid.Column="1" Style="{StaticResource ValueGrid}">
+                        <Grid x:Name ="ADCMax" Grid.Row="2" Grid.Column="1" Style="{StaticResource ValueGrid}">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="0.7*"/>
                                 <ColumnDefinition Width="0.3*"/>
@@ -250,7 +253,7 @@
 
                         <TextBlock Grid.Row="3" Grid.Column="0" Text="Инж. мин" Style="{StaticResource MiniLable}"/>
                         <TextBlock Grid.Row="3" Grid.Column="1" Text="Инж. макс" Style="{StaticResource MiniLable}"/>
-                        <Grid x:Name ="ADCMax" Grid.Row="4" Grid.Column="0" Style="{StaticResource ValueGrid}">
+                        <Grid x:Name ="EMin" Grid.Row="4" Grid.Column="0" Style="{StaticResource ValueGrid}">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="0.7*"/>
                                 <ColumnDefinition Width="0.3*"/>
@@ -258,20 +261,20 @@
                             <TextBox Grid.Column ="0" Style="{StaticResource ValueTextBox}"/>
                             <TextBlock Grid.Column ="1" Style="{StaticResource EguStyle}"/>
                         </Grid>
-                        <Grid x:Name ="ADCMin" Grid.Row="4" Grid.Column="1" Style="{StaticResource ValueGrid}">
+                        <Grid x:Name ="EMax" Grid.Row="4" Grid.Column="1" Style="{StaticResource ValueGrid}">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="0.7*"/>
                                 <ColumnDefinition Width="0.3*"/>
                             </Grid.ColumnDefinitions>
-                            <TextBox Grid.Column ="0" Text="123" Style="{StaticResource ValueTextBox}"/>
-                            <TextBlock Grid.Column ="1" Text="мА" Style="{StaticResource EguStyle}"/>
+                            <TextBox Grid.Column ="0" Style="{StaticResource ValueTextBox}"/>
+                            <TextBlock Grid.Column ="1" Style="{StaticResource EguStyle}"/>
                         </Grid>
 
                         <TextBlock Grid.Row ="5" Grid.ColumnSpan="2" Text="Зона достоверности" Style="{StaticResource SectionLable}"/>
                         <TextBlock Grid.Row="6" Grid.Column="0" Text="Нижняя граница" Style="{StaticResource MiniLable}"/>
                         <TextBlock Grid.Row="6" Grid.Column="1" Text="Верхняя граница" Style="{StaticResource MiniLable}"/>
 
-                        <Grid x:Name ="VPD" Grid.Row="7" Grid.Column="0" Style="{StaticResource ValueGrid}">
+                        <Grid x:Name ="NPD" Grid.Row="7" Grid.Column="0" Style="{StaticResource ValueGrid}">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="0.7*"/>
                                 <ColumnDefinition Width="0.3*"/>
@@ -279,7 +282,7 @@
                             <TextBox Grid.Column ="0"  Style="{StaticResource ValueTextBox}"/>
                             <TextBlock Grid.Column ="1"  Style="{StaticResource EguStyle}"/>
                         </Grid>
-                        <Grid x:Name ="NPD" Grid.Row="7" Grid.Column="1" Style="{StaticResource ValueGrid}">
+                        <Grid x:Name ="VPD" Grid.Row="7" Grid.Column="1" Style="{StaticResource ValueGrid}">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="0.7*"/>
                                 <ColumnDefinition Width="0.3*"/>
@@ -306,7 +309,7 @@
                             </Grid>
                         </Grid>
 
-                        <Button Name="UstEnter" Grid.Row="10" Grid.ColumnSpan="2" Margin="20,2">
+                        <Button Name="UstEnter" Grid.Row="10" Grid.ColumnSpan="2" Margin="20,2" Click="WriteUstavki">
                             <TextBlock Text="Ввод уставок" VerticalAlignment="Center" FontSize="12" FontFamily="Arial"/>
                         </Button>
                     </Grid>

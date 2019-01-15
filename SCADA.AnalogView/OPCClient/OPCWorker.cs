@@ -105,7 +105,57 @@ namespace SCADA.AnalogView
             {
                 throw new Exception("При переописание уставок из контроллера возникло исключение", e);
             }
+        }
 
+        /// <summary>
+        /// Запись уставок в контроллер
+        /// </summary>
+        /// <param name="ustavkiContainer"></param>
+        public void SetPLCUstavki(UstavkiContainer ustavkiContainer)
+        {
+            try                 //Подключение к OPC серверу
+            {
+                Logger.AddMessages($"Подключние к OPC серверу c URL - '{server.Url}'");
+                if (!server.IsConnected)
+                    server.Connect();
+            }
+            catch (Exception e)
+            {
+                throw new Exception($"При попытке покдлючения к OPC DA серверу {server.Url} возникло исключение", e);
+            }
+            Logger.AddMessages("Выполняется запись уставок в OPC сервер");
+            // Создаем набор тегов для записи в OPC сервер
+            ItemValue[] values = new ItemValue[ustavkiItems.Length];
+            for (int i = 0; i < ustavkiItems.Length; i++)
+            {
+                values[i] = new ItemValue(ustavkiItems[i]);
+            }
+            // Общие уставки
+            values[0].Value = ustavkiContainer.EMin.Value;
+            values[1].Value = ustavkiContainer.EMax.Value;
+            values[2].Value = ustavkiContainer.ADCMin.Value;
+            values[3].Value = ustavkiContainer.ADCMax.Value;
+            values[4].Value = ustavkiContainer.NPD.Value;
+            values[5].Value = ustavkiContainer.VPD.Value;
+            values[6].Value = ustavkiContainer.Hister.Value;
+
+            // Технологичнские уставки
+            for (int i = 0; i < 12; i++)
+            {
+                values[8+i].Value = ustavkiContainer.UstValues[i].Value;
+            }
+
+            values[20].Value = 1;           // Команда записи уставок с ВУ в СУ
+
+            try
+            {
+                server.Write(values);
+                Logger.AddMessages("Выполнена запись уставок в OPC севрер");
+            }
+            catch (Exception e)
+            {
+                throw new Exception($"При записи уставок в OPC сервер {server.Url} возникло исключение", e);
+            }
         }
 
         public void GetCurrentAnalogValue(out AnalogValue value)
@@ -118,9 +168,6 @@ namespace SCADA.AnalogView
             throw new NotImplementedException();
         }
 
-        public void SetPLCUstavki(UstavkiContainer ustavkiContainer)
-        {
-            throw new NotImplementedException();
-        }
+
     }
 }

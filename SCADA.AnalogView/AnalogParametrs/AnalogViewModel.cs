@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Globalization;
+using System.Windows.Threading;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -16,6 +17,7 @@ namespace SCADA.AnalogView.AnalogParametrs
     {
         AnalogParamsController analogController;
 
+        Dispatcher dispatcher;
 
         UstContainerViewModel ustContainer;
         /// <summary>
@@ -53,7 +55,21 @@ namespace SCADA.AnalogView.AnalogParametrs
             analogController = controller;
             ustContainer = new UstContainerViewModel(controller.Ustavki);           // преставление контейнера уставок
             analogController.OnUstConteinerChanged += ustContainer.OnContextChange;        // привязка к событию изменния контекста уставок
+            // получения диспетчера для текущего потока
+            // создание данного объекта будет выполняться в главном потоке
+            dispatcher = Dispatcher.CurrentDispatcher;
 
+            analogController.OnSendUserMessage += SendUSerMessageEventHandler;          // привязка к событию выдачи сообщений оператору
+        }
+
+        /// <summary>
+        /// Обработка события выдачи информационного сообщения оператору
+        /// </summary>
+        /// <param name="exc"></param>
+        void SendUSerMessageEventHandler(UserMessageException exc)
+        {
+            // открытие информационного окна, обязательно через диспетчер, так как событие может вылетать в разных потоках
+            dispatcher?.Invoke(() => { MessageWindow.ShowException(exc); });
         }
 
         /// <summary>

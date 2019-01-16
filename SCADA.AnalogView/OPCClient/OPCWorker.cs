@@ -82,7 +82,7 @@ namespace SCADA.AnalogView
             ItemValueResult[] result = server.Read(ustavkiItems);
 
             if (result[0].Quality != Opc.Da.Quality.Good)
-                throw new Exception("Считанные значения из PLC не достоверны");
+                throw new UserMessageException("Считанные значения из PLC не достоверны", MessageType.Error);
             try
             {
                 // Переопсиание считанных параметров из контроллера в массив хранения уставок

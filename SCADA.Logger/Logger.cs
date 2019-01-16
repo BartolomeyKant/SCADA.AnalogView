@@ -64,7 +64,6 @@ namespace SCADA.Logging
             // удаление файлов старше указанного времени
             foreach (FileInfo file in files)
             {
-
                 if (nowTime.Subtract(file.CreationTime).Days >= LogsDayCount)
                 {
                     file.Delete();
@@ -182,7 +181,7 @@ namespace SCADA.Logging
         // печать сообщений в файл логов
         static void printExsceptionToFile(Exception exc)
         {
-            string mess = DateTime.Now.ToString("yyyy-MM-dd hh:mm:ss.ffff") + " - " + exc.Message;
+            string mess = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.ffff") + " - " + exc.Message;
             writter.Write(mess);
             if (exc.InnerException != null)
             {

@@ -12,6 +12,7 @@ namespace SCADA.AnalogView.AnalogParametrs
 {
 
     delegate void UstConteinerChanged(UstavkiContainer newUstContainer);
+    delegate void UserMessageThrowed(UserMessageException exc);
 
     class AnalogParamsController
     {
@@ -21,6 +22,11 @@ namespace SCADA.AnalogView.AnalogParametrs
         /// Событие изменения выбранного контейнера для работы с уставками
         /// </summary>
         public event UstConteinerChanged OnUstConteinerChanged;
+
+        /// <summary>
+        /// Событие отправки информационного сообщения  пользователю
+        /// </summary>
+        public event UserMessageThrowed OnSendUserMessage;
 
         // Объект конфигурации 
         ConfigurationWorker configuration;
@@ -67,9 +73,20 @@ namespace SCADA.AnalogView.AnalogParametrs
 
             // функция чтения уставок из базы данных и из контроллера
             UstavkiRead();
-
         }
 
+
+        /// <summary>
+        /// Функция вызывает событие отправки сообщения пользователю
+        /// При этом сообщение так же логируется как сообщение 
+        /// </summary>
+        /// <param name="exc"></param>
+        void SendUserMessage(UserMessageException exc)
+        {
+            Logger.AddMessages($"Выдача сообщения пользователю - {exc.Message}");
+            OnSendUserMessage?.Invoke(exc);
+
+        }
 
         /// <summary>
         /// Чтение уставок из базы данных и  контроллера
@@ -80,37 +97,51 @@ namespace SCADA.AnalogView.AnalogParametrs
         {
             dataBaseUstavki = new UstavkiContainer();
             commonParams = new CommonAnalogParams();
-            DBWorker.SetDBTag(configuration.ReadingTag);
-            DBWorker.ReadUstavki(ref dataBaseUstavki ,ref commonParams);
 
-            Ustavki = dataBaseUstavki;              // принимаем уставки базы данных, как текущие
-
-            // ассинхронное чтение уставок из контроллера
-            await Task.Run(() =>
+            try
             {
-                // клонируем уставки для сохранения параметров из базы данных
-                plcUstavki = (UstavkiContainer)dataBaseUstavki.Clone();
+                DBWorker.SetDBTag(configuration.ReadingTag);
+                DBWorker.ReadUstavki(ref dataBaseUstavki, ref commonParams);
 
-                // модифицируем теги для чтения , потому как получили индекс контроллера для чтения
-                for (int i = 0; i < configuration.UstavkiTags.Length; i++)
-                {
-                    configuration.UstavkiTags[i] = configuration.UstavkiTags[i].Replace(configuration.Indexator, "[" + commonParams.ControllerIndex.ToString() + "]");
-                }
+                Ustavki = dataBaseUstavki;              // принимаем уставки базы данных, как текущие
 
-                try
-                {
-                    PLCUstavki.SetUstavkiTags(configuration.UstavkiTags);
-                    PLCUstavki.GetPLCUstavki(ref plcUstavki);
-                    // Выполнение сравнения уставок контроллера и базы данных
-                    plcUstavki.Compare(dataBaseUstavki);
-                    Ustavki = plcUstavki;              // принимаем уставки базы данных, как текущие
-                }
-                catch (Exception e)
-                {
-                    Logger.AddError(e);
-                    return;
-                }
-            });
+                // ассинхронное чтение уставок из контроллера
+                Task plcReading = Task.Run(() =>
+                 {
+
+                     // клонируем уставки для сохранения параметров из базы данных
+                     plcUstavki = (UstavkiContainer)dataBaseUstavki.Clone();
+
+                     //// ---- тут проблема в архитектуре
+                     //// ---- если адресация будет сильно отличаться, предется переделывать этот кусок здесь, а не в реализации интерфейса
+                     //// ---- с другой стороны для реализации в интерфейсе возможно придется менять и сам интерфейс (добавлять параметры на вход)
+                     // модифицируем теги для чтения , потому как получили индекс контроллера для чтения
+                     for (int i = 0; i < configuration.UstavkiTags.Length; i++)
+                     {
+                         configuration.UstavkiTags[i] = configuration.UstavkiTags[i].Replace(configuration.Indexator, "[" + commonParams.ControllerIndex.ToString() + "]");
+                     }
+                     PLCUstavki.SetUstavkiTags(configuration.UstavkiTags);
+                     PLCUstavki.GetPLCUstavki(ref plcUstavki);
+                     // Выполнение сравнения уставок контроллера и базы данных
+                     plcUstavki.Compare(dataBaseUstavki);
+                     Ustavki = plcUstavki;              // принимаем уставки базы данных, как текущие
+                 });
+                await plcReading;
+                if(!plcReading.IsFaulted)
+                    SendUserMessage(new UserMessageException("Чтение уставок завершено", MessageType.JobDone));
+
+            }
+            catch (UserMessageException exc)
+            {
+                SendUserMessage(exc);
+                throw exc;
+            }
+            catch (Exception e)
+            {
+                Logger.AddError(e);
+                SendUserMessage(new UserMessageException("Ошибка в работе приложения", e, MessageType.Error));
+                return;
+            }
         }
 
         /// <summary>
@@ -134,54 +165,53 @@ namespace SCADA.AnalogView.AnalogParametrs
             flIsChangedOrDiffValues = flIsChangedOrDiffValues || (Ustavki.NPD.Changed || Ustavki.NPD.Different);
             flIsChangedOrDiffValues = flIsChangedOrDiffValues || (Ustavki.Hister.Changed || Ustavki.Hister.Different);
 
-            // если есть изменения или были отличия с архивом выолняем запис уставок
-            if (flIsChangedOrDiffValues)
+            // Запись в базу данных и контроллер выполняется ассинхронно
+            try
             {
-                // Запись в базу данных и контроллер выполняется ассинхронно
-                // Запись в базу данных
-                await Task.Run(() =>
+                // если есть изменения или были отличия с архивом выолняем запис уставок
+                if (flIsChangedOrDiffValues)
                 {
-                    try
+
+                    // Запись в базу данных
+                    await Task.Run(() =>
                     {
                         Logger.AddMessages("Запись уставовк в базу данных");
                         DBWorker.WriteUstavki(Ustavki, commonParams);
-                    }
-                    catch (Exception e)
-                    {
-                        Logger.AddError(e);
-                        throw new UserMessageException("При записи уставок в базу данных возникло исключение", e);
-                    }
-                });
-                // Запись в контроллер
-                await Task.Run(() =>
-                {
-                    try
+                    });
+                    // Запись в контроллер
+                    await Task.Run(() =>
                     {
                         Logger.AddMessages("Запись уставок в контроллер");
                         PLCUstavki.SetPLCUstavki(Ustavki);
-                    }
-                    catch (Exception e)
+                    });
+
+                    // Сброс флагов состояния уставок
+                    Ustavki.ClearState();
+                    // Переописание уставок и повторное сравнение
+                    if (Ustavki == plcUstavki)
                     {
-                        Logger.AddError(e);
-                        throw new UserMessageException("При запсии уставок в контроллер возникло исключение", e);
+                        dataBaseUstavki = (UstavkiContainer)plcUstavki.Clone();
                     }
-                });
-                // Сброс флагов состояния уставок
-                Ustavki.ClearState();
-                // Переописание уставок и повторное сравнение
-                if (Ustavki == plcUstavki)
-                {
-                    dataBaseUstavki = (UstavkiContainer)plcUstavki.Clone();
+                    else
+                    {
+                        plcUstavki = (UstavkiContainer)dataBaseUstavki.Clone();
+                    }
+                    plcUstavki.Compare(dataBaseUstavki);
                 }
                 else
                 {
-                    plcUstavki = (UstavkiContainer)dataBaseUstavki.Clone();
+                    throw new UserMessageException("Нет измененных уставок");
                 }
-                plcUstavki.Compare(dataBaseUstavki);
             }
-            else
+            catch (UserMessageException exc)
             {
-                throw new UserMessageException("Нет измененных уставок");
+                SendUserMessage(exc);
+            }
+            catch (Exception e)
+            {
+                Logger.AddError(e);
+                SendUserMessage(new UserMessageException("Ошибка в работе приложения", e, MessageType.Error));
+                return;
             }
         }
 

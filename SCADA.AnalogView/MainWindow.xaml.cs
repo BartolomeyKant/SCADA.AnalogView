@@ -154,13 +154,6 @@ namespace SCADA.AnalogView
         {
             MessageWindow.ownerWindow = this;
 
-            MessageWindow.ShowMessage("Сообщение 1");
-            MessageWindow.ShowWarning("Предупреждение");
-            MessageWindow.ShowError("Ошибка");
-            MessageWindow.ShowException(new UserMessageException("Ехал грека черех реку",
-                new Exception("Видит грека в реке рак",
-                new Exception("Сунул грека в реку руку",
-                new Exception("Рак за руку грека цап!"))), MessageType.JobDone));
         }
     }
 }

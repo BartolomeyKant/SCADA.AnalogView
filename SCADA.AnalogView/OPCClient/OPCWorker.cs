@@ -80,8 +80,17 @@ namespace SCADA.AnalogView
                 throw new Exception($"При попытке покдлючения к OPC DA серверу {server.Url} возникло исключение", e);
             }
             ItemValueResult[] result = server.Read(ustavkiItems);
-
-            if (result[0].Quality != Opc.Da.Quality.Good)
+            // определение успешности операции
+            bool flIsSuccess = true;
+            for (int i = 0; i < result.Length; i++)
+            {
+                if (result[i].Quality != Opc.Da.Quality.Good)
+                {
+                    flIsSuccess = false;
+                    Logger.AddWarning($"Для тега {result[i].ItemName} не прочитано значение с ошибкой {result[i].ResultID}");
+                }
+            }
+            if (!flIsSuccess)
                 throw new UserMessageException("Считанные значения из PLC не достоверны", MessageType.Error);
             try
             {
@@ -149,9 +158,24 @@ namespace SCADA.AnalogView
 
             try
             {
-                server.Write(values);
+                bool flSuccess = true;
+                IdentifiedResult[] result = server.Write(values);
+                for (int i = 0; i < result.Length; i++)
+                {
+                    if (result[i].ResultID != ResultID.S_OK)
+                    {
+                        flSuccess = false;
+                        Logger.AddWarning($"Для уставки с тегом {result[i].ItemName} значение записано с ошибкой {result[i].ResultID}");
+                    }
+                }
+                if (!flSuccess)
+                {
+                    throw new UserMessageException("Уставки не записанны в OPC сервер", MessageType.Error);
+                }
                 Logger.AddMessages("Выполнена запись уставок в OPC севрер");
             }
+            catch (UserMessageException exc)
+            { throw exc; }
             catch (Exception e)
             {
                 throw new Exception($"При записи уставок в OPC сервер {server.Url} возникло исключение", e);

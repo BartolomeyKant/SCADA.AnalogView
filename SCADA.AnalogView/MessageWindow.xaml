@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:SCADA.AnalogView"
         mc:Ignorable="d"
-        Title="MessageWindow" MinHeight="100" MinWidth="400" MaxWidth="600" WindowStartupLocation="CenterOwner" WindowStyle="None" VerticalAlignment="Center" HorizontalAlignment="Center" ResizeMode="NoResize" ShowInTaskbar="False" SizeToContent="WidthAndHeight" >
+        Title="MessageWindow" MinHeight="100" MinWidth="400" MaxWidth="600" WindowStartupLocation="CenterOwner" WindowStyle="None" VerticalAlignment="Center" HorizontalAlignment="Center" ResizeMode="NoResize" ShowInTaskbar="False" SizeToContent="WidthAndHeight" Loaded="Window_Loaded" >
     <Grid Width="auto">
         <Grid.RowDefinitions>
             <RowDefinition Height="25px"/>
@@ -17,7 +17,7 @@
         <Rectangle Grid.Row="0" Stroke="Gray"></Rectangle>
         <StackPanel Grid.Row ="0" Orientation="Horizontal">
             <Image Source="Resources/Img/ammeter.ico" HorizontalAlignment="Left" Height="20px" Margin="5,0"/>
-            <TextBlock Grid.Row="0" Text="До закрытия окна осталось 45 сек." Margin="3" FontSize="12" FontFamily="Arial" VerticalAlignment="Center"/>
+            <TextBlock Grid.Row="0" Text="{Binding Path=ToCloseMessage}" Margin="3" FontSize="12" FontFamily="Arial" VerticalAlignment="Center"/>
         </StackPanel>
         <!-- Содержимое окна -->
         <Grid x:Name="ContentGrid" Grid.Row="1" HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,10,0,0">

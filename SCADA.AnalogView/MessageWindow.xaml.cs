@@ -119,9 +119,14 @@ namespace SCADA.AnalogView
                 timer = timeToClose;
                 while (true)
                 {
-                    ToCloseMessage = $"До закрытия окна осталось {timer} сек.";     
+                    ToCloseMessage = $"До закрытия окна осталось {timer} сек.";
                     Thread.Sleep(1000);
                     timer--;
+                    if (timer == 0) // если таймер досчитал, то закрываем окно
+                    {
+                        this.Dispatcher.Invoke(()=> { this.Close(); });
+                        return;
+                    }
                 }
             });
         }

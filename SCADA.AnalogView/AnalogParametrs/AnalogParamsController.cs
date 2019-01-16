@@ -170,19 +170,21 @@ namespace SCADA.AnalogView.AnalogParametrs
                 // если есть изменения или были отличия с архивом выолняем запис уставок
                 if (flIsChangedOrDiffValues)
                 {
+                        // параллельная запись в базу и в PLC
+                        // Запись в базу данных
+                        Task t1 = Task.Run(() =>
+                        {
+                            Logger.AddMessages("Запись уставовк в базу данных");
+                            DBWorker.WriteUstavki(Ustavki, commonParams);
+                        });
+                        // Запись в контроллер
+                        Task t2 = Task.Run(() =>
+                        {
+                            Logger.AddMessages("Запись уставок в контроллер");
+                            PLCUstavki.SetPLCUstavki(Ustavki);
+                        });
 
-                    // Запись в базу данных
-                    await Task.Run(() =>
-                    {
-                        Logger.AddMessages("Запись уставовк в базу данных");
-                        DBWorker.WriteUstavki(Ustavki, commonParams);
-                    });
-                    // Запись в контроллер
-                    await Task.Run(() =>
-                    {
-                        Logger.AddMessages("Запись уставок в контроллер");
-                        PLCUstavki.SetPLCUstavki(Ustavki);
-                    });
+                        await Task.WhenAll(new[] { t1, t2 });
 
                     // Сброс флагов состояния уставок
                     Ustavki.ClearState();
@@ -201,6 +203,22 @@ namespace SCADA.AnalogView.AnalogParametrs
                 {
                     throw new UserMessageException("Нет измененных уставок");
                 }
+            }
+            catch (AggregateException ae)            // отлавлиавем исключения в await блоке, так как две функции могут выдать два исключения
+            {
+                foreach (Exception e in ae.InnerExceptions)
+                {
+                    if (e is UserMessageException)
+                    {
+                        SendUserMessage((UserMessageException)e);
+                    }
+                    else
+                    {
+                        Logger.AddError(e);
+                        SendUserMessage(new UserMessageException("Ошибка в работе приложения", e, MessageType.Error));
+                    }
+                }
+                return;
             }
             catch (UserMessageException exc)
             {

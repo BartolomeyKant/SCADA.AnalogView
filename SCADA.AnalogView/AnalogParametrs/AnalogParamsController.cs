@@ -134,7 +134,6 @@ namespace SCADA.AnalogView.AnalogParametrs
             catch (UserMessageException exc)
             {
                 SendUserMessage(exc);
-                throw exc;
             }
             catch (Exception e)
             {

@@ -3,6 +3,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Threading;
+using System.ComponentModel;
 
 using SCADA.Logging;
 
@@ -37,24 +38,43 @@ namespace SCADA.AnalogView
     /// <summary>
     /// Логика взаимодействия для MessageWindow.xaml
     /// </summary>
-    public partial class MessageWindow : Window
+    public partial class MessageWindow : Window, INotifyPropertyChanged
     {
         // тип сообщения 
         public byte MessageType { get; set; }
         public string MessageText { get; set; }
         public static Window ownerWindow { get; set; }
 
-        public string ToCloseMessage { get; set; }
+        string toCloseMessage;
+        public string ToCloseMessage
+        {
+            set
+            {
+                toCloseMessage = value;
+                OnPropertyChanged("ToCloseMessage");
+            }
+            get
+            { return toCloseMessage; }
+        }
 
         const int timeToClose = 30;
          int timer;
 
         Task timerTask;
 
+        // реализация интерфейса INotifyPropertyChanged
+        public event PropertyChangedEventHandler PropertyChanged;
+        public void OnPropertyChanged(string prop = "")
+        {
+            if (PropertyChanged != null)
+                PropertyChanged(this, new PropertyChangedEventArgs(prop));
+        }
+
         public MessageWindow()
         {
             InitializeComponent();
             ContentGrid.DataContext = this;
+            TopPanel.DataContext = this;
         }
 
         /// <summary>

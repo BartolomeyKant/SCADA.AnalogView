@@ -15,7 +15,7 @@
         <Border Grid.Row="0" Grid.RowSpan="3" BorderThickness="1" BorderBrush="Gray" Margin="1" />
         <!-- Шапка -->
         <Rectangle Grid.Row="0" Stroke="Gray"></Rectangle>
-        <StackPanel Grid.Row ="0" Orientation="Horizontal">
+        <StackPanel x:Name="TopPanel" Grid.Row ="0" Orientation="Horizontal">
             <Image Source="Resources/Img/ammeter.ico" HorizontalAlignment="Left" Height="20px" Margin="5,0"/>
             <TextBlock Grid.Row="0" Text="{Binding Path=ToCloseMessage}" Margin="3" FontSize="12" FontFamily="Arial" VerticalAlignment="Center"/>
         </StackPanel>

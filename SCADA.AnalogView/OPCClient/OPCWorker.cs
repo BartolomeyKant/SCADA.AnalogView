@@ -191,7 +191,5 @@ namespace SCADA.AnalogView
         {
             throw new NotImplementedException();
         }
-
-
     }
 }

@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace SCADA.AnalogView.AnalogParametrs.AnalogInterfaces
 {
-    interface IPLCAnalogValueReader
+    interface IPLCAnalogValue
     {
         /// <summary>
         /// натстройка тегов для чтения с контроллера
@@ -19,11 +19,26 @@ namespace SCADA.AnalogView.AnalogParametrs.AnalogInterfaces
         /// Чтение текущего значения аналогового сигнала
         /// </summary>
         /// <param name="value">ссылка на представление аналогового сигнала</param>
-        void GetCurrentAnalogValue(out AnalogValue value);
+        void GetCurrentAnalogValue(ref AnalogValue value);
         /// <summary>
         /// Подписка на изменение значений аналогового сигнала
         /// </summary>
         /// <param name="value">Ссылка на предсталение аналогового сигнала</param>
         void SubscribeToChangeAnalogValue(ref AnalogValue value);
+
+        /// <summary>
+        /// команда в контроллер установить имитацию
+        /// </summary>
+        /// <param name="ImitValue"></param>
+        void CmdSetImit(float ImitValue);
+        /// <summary>
+        /// Команда в контроллер снять имитацию
+        /// </summary>
+        void CmdUnsetImit();
+        /// <summary>
+        /// Команда в контроллер записать новое значение имитации
+        /// </summary>
+        /// <param name="ImitValue"></param>
+        void CmdChangeImitValue(float ImitValue);
     }
 }

@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -164,7 +163,7 @@ namespace SCADA.Logging
                     writter = logFile.AppendText();
                     break;
                 }
-                catch (IOException e)               // если ошибка ввода-вывод, то пробем еще раз
+                catch (IOException)               // если ошибка ввода-вывод, то пробем еще раз
                 {
                     Thread.Sleep(10);
                     continue;

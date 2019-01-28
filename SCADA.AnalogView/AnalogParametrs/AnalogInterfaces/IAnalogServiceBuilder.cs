@@ -22,10 +22,7 @@ namespace SCADA.AnalogView.AnalogParametrs.AnalogInterfaces
         /// <summary>
         /// Объект для чтения значений с контроллера
         /// </summary>
-        IPLCAnalogValueReader PLCValueReader { get; }
-        /// <summary>
-        /// Объект для записи команд в контроллер
-        /// </summary>
-        IPLCAnalogValueWriter PLCValueWriter { get; }
+        IPLCAnalogValue PLCValue { get; }
+
     }
 }

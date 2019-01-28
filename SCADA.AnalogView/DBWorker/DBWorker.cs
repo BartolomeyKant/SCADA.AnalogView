@@ -6,6 +6,8 @@ using System.Threading.Tasks;
 using System.Data;
 using System.Data.SqlClient;
 
+
+using SCADA.AnalogView.DialogWindows;
 using SCADA.AnalogView.AnalogParametrs;
 using SCADA.AnalogView.AnalogParametrs.AnalogInterfaces;
 using SCADA.Logging;

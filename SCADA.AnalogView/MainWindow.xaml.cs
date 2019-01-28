@@ -7,6 +7,7 @@ using System.Windows.Input;
 
 using SCADA.Logging;
 using SCADA.AnalogView.AnalogParametrs;
+using SCADA.AnalogView.DialogWindows;
 
 namespace SCADA.AnalogView
 {
@@ -64,7 +65,11 @@ namespace SCADA.AnalogView
                 "PLC!arrAIParam[x].UstMax[5]",         //18
                 "PLC!arrAIParam[x].UstMax[6]",         //19
                 "PLC!arrAIParam[x].IsChanged"          //20
-                }
+                },
+
+                ADCTag = "PLC!arElInput[x]",                // код АЦП
+                ValueTag = "PLC!arAIValue[x]",              // тег значения
+                AnalogStateTag = "PLC!awAIKCReg[x]"         // тег состояния
             };
 
             // инциализация логгера
@@ -148,12 +153,10 @@ namespace SCADA.AnalogView
             analogView.WriteUsts();
         }
 
-
         // после загрузки формы
         private void Window_Loaded(object sender, RoutedEventArgs e)
         {
-            MessageWindow.ownerWindow = this;
-
+            Dialogs.ownerWindow = this;
         }
     }
 }

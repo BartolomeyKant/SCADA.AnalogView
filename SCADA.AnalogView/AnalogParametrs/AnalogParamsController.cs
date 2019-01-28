@@ -7,6 +7,7 @@ using System.Threading;
 
 using SCADA.AnalogView.AnalogParametrs.AnalogInterfaces;
 using SCADA.Logging;
+using SCADA.AnalogView.DialogWindows;
 
 namespace SCADA.AnalogView.AnalogParametrs
 {
@@ -16,8 +17,6 @@ namespace SCADA.AnalogView.AnalogParametrs
 
     class AnalogParamsController
     {
-
-
         /// <summary>
         /// Событие изменения выбранного контейнера для работы с уставками
         /// </summary>
@@ -59,20 +58,21 @@ namespace SCADA.AnalogView.AnalogParametrs
         }
 
         IDBWorker DBWorker;                     // Объект для чтения/записи из / в базы данных
-        IPLCAnalogValueReader PLCValueReader;   // Объект для чтения из контроллера значений аналогового сигнала
-        IPLCAnalogValueWriter PLCValueWriter;   // Объект для записи команд управления аналоговым параметром
+        IPLCAnalogValue PLCValue;   // Объект для чтения из контроллера значений аналогового сигнала
         IPLCAnalogUstavki PLCUstavki;           // Объект для чтения / записи уставок из / в контроллер
 
         public AnalogParamsController(ConfigurationWorker config, IAnalogServiceBuilder builder)
         {
             configuration = config;
             DBWorker = builder.DBWorker;
-            PLCValueReader = builder.PLCValueReader;
+            PLCValue = builder.PLCValue;
             PLCUstavki = builder.PLCUstavki;
-            PLCValueWriter = builder.PLCValueWriter;
 
             // функция чтения уставок из базы данных и из контроллера
             UstavkiRead();
+
+            // чтение текущих значений из контроллера
+            ReadPLCValue();
         }
 
 
@@ -87,6 +87,8 @@ namespace SCADA.AnalogView.AnalogParametrs
             OnSendUserMessage?.Invoke(exc);
 
         }
+
+        #region // Работа с уставками
 
         /// <summary>
         /// Чтение уставок из базы данных и  контроллера
@@ -127,9 +129,6 @@ namespace SCADA.AnalogView.AnalogParametrs
                      Ustavki = plcUstavki;              // принимаем уставки базы данных, как текущие
                  });
                 await plcReading;
-                if(!plcReading.IsFaulted)
-                    SendUserMessage(new UserMessageException("Чтение уставок завершено", MessageType.JobDone));
-
             }
             catch (UserMessageException exc)
             {
@@ -198,6 +197,8 @@ namespace SCADA.AnalogView.AnalogParametrs
                         plcUstavki = (UstavkiContainer)dataBaseUstavki.Clone();
                     }
                     plcUstavki.Compare(dataBaseUstavki);
+
+                    throw new UserMessageException("Запись уставок выполнена!", MessageType.JobDone);
                 }
                 else
                 {
@@ -328,5 +329,47 @@ namespace SCADA.AnalogView.AnalogParametrs
             }
 
         }
+        #endregion
+
+        #region // работа со значениями
+
+        /// <summary>
+        /// Чтение текущих значений из PLC
+        /// </summary>
+        async void ReadPLCValue()
+        {
+            // объект значения аналогового сигнала
+            // подписывается на изменение объекта уставок
+            analogValue = new AnalogValue();
+            OnUstConteinerChanged += analogValue._OnConteinerChanged;
+            analogValue._OnConteinerChanged(Ustavki);
+
+            // подготовка тегов аналогового сигнала
+            configuration.ADCTag = configuration.ADCTag.Replace(configuration.Indexator, "[" + commonParams.ControllerIndex + "]");
+            configuration.ValueTag = configuration.ValueTag.Replace(configuration.Indexator, "[" + commonParams.ControllerIndex + "]");
+            configuration.AnalogStateTag = configuration.AnalogStateTag.Replace(configuration.Indexator, "[" + commonParams.ControllerIndex + "]");
+
+            PLCValue.SetAnalogTags(configuration.ADCTag, configuration.ValueTag, configuration.AnalogStateTag);     // настройка тегов для чтения значений
+            // Чтение значений из PLC выполняется ассинхронно
+            try
+            {
+                await Task.Run(() =>
+                {
+                    PLCValue.GetCurrentAnalogValue(ref analogValue);                                                       // чтение текущих значений
+                });
+            }
+            catch (UserMessageException exc)
+            {
+                SendUserMessage(exc);
+            }
+            catch (Exception e)
+            {
+                Logger.AddError(e);
+                SendUserMessage(new UserMessageException("Ошибка в работе приложения", e, MessageType.Error));
+                return;
+            }
+        }
+
+        #endregion
     }
 }

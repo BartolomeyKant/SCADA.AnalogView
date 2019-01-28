@@ -8,11 +8,11 @@ namespace SCADA.AnalogView.AnalogParametrs
 {
     class AnalogValue
     {
-        double adcValue;
+        float adcValue;
         /// <summary>
         /// текущее значение кодов АЦП
         /// </summary>
-        public double ADCValue
+        public float ADCValue
         {
             get {return adcValue; }
             set
@@ -25,28 +25,28 @@ namespace SCADA.AnalogView.AnalogParametrs
             }
         }
 
-        double engValue;
+        float engValue;
         /// <summary>
         /// Текущее пересчитанное значение инженерной величины
         /// </summary>
-        public double ENGValue {
+        public float ENGValue {
             get { return engValue; }
             set { engValue = value; }
         }
 
-        double plcValue;
+        float plcValue;
         /// <summary>
         /// Текущее значение в контроллере принятое в работу
         /// </summary>
-        public double PLCValue {
+        public float PLCValue {
             get { return plcValue; }
             set { plcValue = value; } }
 
-        uint analogState;
+        ushort analogState;
         /// <summary>
         /// Текущее состояние аналогового сигнала
         /// </summary>
-        public uint AnalogState {
+        public ushort AnalogState {
             get { return analogState;  }
             set { analogState = value;  } }
 

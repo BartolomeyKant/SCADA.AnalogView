@@ -9,6 +9,7 @@ using Opc.Da;
 using OpcCom;
 using SCADA.Logging;
 
+using SCADA.AnalogView.DialogWindows;
 using SCADA.AnalogView.AnalogParametrs;
 using SCADA.AnalogView.AnalogParametrs.AnalogInterfaces;
 
@@ -18,13 +19,16 @@ namespace SCADA.AnalogView
      ===========================================================
      В классе реализуются методы чтения / записи данных через OPCDA
          */
-    class OPCDAWorker:IPLCAnalogUstavki, IPLCAnalogValueReader, IPLCAnalogValueWriter
+    class OPCDAWorker:IPLCAnalogUstavki, IPLCAnalogValue
     {
         string[] ustvakiTags;
+        string[] cmdTags;
+        string[] valueTags;
 
         Opc.Da.Server server;
 
         Item[] ustavkiItems;
+        Item[] valueItems;
 
         /// <summary>
         /// Создание объекта для работы с OPC DA serverom
@@ -43,6 +47,8 @@ namespace SCADA.AnalogView
             }
         }
 
+
+        #region Работа с уставками контроллера
         /// <summary>
         /// задание тегов для работы с уставками
         /// </summary>
@@ -56,11 +62,6 @@ namespace SCADA.AnalogView
                 ustavkiItems[i] = new Item() { ItemName = ustvakiTags[i] };
             }
             Logger.AddMessages($"В OPC севрер добавлено {ustavkiItems.Length} тегов для работы с уставками");
-        }
-
-        public void SubscribeToChangeAnalogValue(ref AnalogValue value)
-        {
-            throw new NotImplementedException();
         }
 
         /// <summary>
@@ -84,14 +85,14 @@ namespace SCADA.AnalogView
             bool flIsSuccess = true;
             for (int i = 0; i < result.Length; i++)
             {
-                if (result[i].Quality != Opc.Da.Quality.Good)
+                if (result[i].Quality != Quality.Good)
                 {
                     flIsSuccess = false;
                     Logger.AddWarning($"Для тега {result[i].ItemName} не прочитано значение с ошибкой {result[i].ResultID}");
                 }
             }
             if (!flIsSuccess)
-                throw new UserMessageException("Считанные значения из PLC не достоверны", MessageType.Error);
+                throw new UserMessageException("Считанные уставки из контроллера не достоверны", MessageType.Warning);
             try
             {
                 // Переопсиание считанных параметров из контроллера в массив хранения уставок
@@ -148,11 +149,14 @@ namespace SCADA.AnalogView
             values[5].Value = ustavkiContainer.VPD.Value;
             values[6].Value = ustavkiContainer.Hister.Value;
 
+            uint ustEnable = 32768;
             // Технологичнские уставки
             for (int i = 0; i < 12; i++)
             {
                 values[8+i].Value = ustavkiContainer.UstValues[i].Value;
+                ustEnable = ustEnable + (uint)((ustavkiContainer.UstValues[i].Used ? 1: 0) << i);
             }
+            values[7].Value = ustEnable;    
 
             values[20].Value = 1;           // Команда записи уставок с ВУ в СУ
 
@@ -182,12 +186,90 @@ namespace SCADA.AnalogView
             }
         }
 
-        public void GetCurrentAnalogValue(out AnalogValue value)
+        #endregion
+
+
+        /// <summary>
+        /// настройка тегов аналогового сигнала 
+        /// </summary>
+        /// <param name="ADCTag">тег кода АЦП</param>
+        /// <param name="PLCValueTag">тег текущего значения аналогового сигнала</param>
+        /// <param name="AnalogState">тег состояния аналогового сигнала</param>
+        public void SetAnalogTags(string ADCTag, string PLCValueTag, string AnalogState )
+        {
+            // теги добавляются строго в заданном порядке
+            valueTags = new string[3];
+            valueTags[0] = ADCTag;
+            valueTags[1] = PLCValueTag;
+            valueTags[2] = AnalogState;
+
+            // формирование набора итемов
+            valueItems = new Item[3];
+            for (int i = 0; i < 3; i++)
+            {
+                valueItems[i] = new Item() { ItemName = valueTags[i]};
+            }
+
+        }
+
+        public void GetCurrentAnalogValue(ref AnalogValue value)
+        {
+            try
+            {
+                Logger.AddMessages($"Попытка подключения к opc da серуеру {server.Url}");
+                if (!server.IsConnected)
+                    server.Connect();
+            }
+            catch (Exception e)
+            {
+                throw new Exception($"Ошибка подключения к OPC DA серверу {server.Url} для считывания значений аналогового сигнала", e);
+            }
+
+            ItemValueResult[] result = server.Read(valueItems);         // чтение значений
+
+            // проверка качества значений
+            bool flSuccess = true;
+            for (int i = 0; i < result.Length; i++)
+            {
+                if (result[i].Quality != Quality.Good)
+                {
+                    flSuccess = false;
+                    Logger.AddWarning($"Для тега {result[i].ItemName} не прочитано значение с ошибкой {result[i].ResultID}");
+                }
+            }
+            if (!flSuccess)
+                throw new UserMessageException("Считанные уставки из контроллера не достоверны", MessageType.Warning);
+
+            // переописание значений
+            try
+            {
+                value.ADCValue = (float)result[0].Value;        //  код АЦП
+                value.PLCValue = (float)result[1].Value;        // текущее значение
+                value.AnalogState = (ushort)result[2].Value;        // состояние сигнала
+            }
+            catch (Exception e)
+            {
+                throw new Exception($"При переописании значения аналогового сигнала возникло исключение", e);
+            }
+        }
+
+
+        public void SubscribeToChangeAnalogValue(ref AnalogValue value)
         {
             throw new NotImplementedException();
         }
 
-        public void SetAnalogTags(string ADCTag, string PLCValueTag, string AnalogState)
+        public void CmdSetImit(float ImitValue)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void CmdUnsetImit()
+        {
+            throw new NotImplementedException();
+        }
+
+        public void CmdChangeImitValue(float ImitValue)
         {
             throw new NotImplementedException();
         }

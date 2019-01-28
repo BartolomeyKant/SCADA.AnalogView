@@ -7,6 +7,7 @@ using System.Text;
 using System.Threading.Tasks;
 
 using SCADA.Logging;
+using SCADA.AnalogView.DialogWindows;
 
 namespace SCADA.AnalogView.AnalogParametrs
 {
@@ -69,7 +70,8 @@ namespace SCADA.AnalogView.AnalogParametrs
         void SendUSerMessageEventHandler(UserMessageException exc)
         {
             // открытие информационного окна, обязательно через диспетчер, так как событие может вылетать в разных потоках
-            dispatcher?.Invoke(() => { MessageWindow.ShowException(exc); });
+            //dispatcher?.Invoke(() => { Dialogs.ShowException(exc); });
+            Dialogs.ShowException(exc);
         }
 
         /// <summary>
@@ -87,7 +89,7 @@ namespace SCADA.AnalogView.AnalogParametrs
                 { // Сначала пробуем влоб
                     newValue = float.Parse(txValue);
                 }
-                catch (FormatException fe)
+                catch (FormatException )
                 {
                     // пробуем поменять DecimalSeparator
                     string separator = "";
@@ -127,7 +129,9 @@ namespace SCADA.AnalogView.AnalogParametrs
         /// </summary>
         public void WriteUsts()
         {
-            // TODO  спросить пользователя
+            ResultDialog res = Dialogs.ShowDialogMessage("Выполнить ввод уставок?", MessageType.Question);
+            if (res != ResultDialog.Yes)            // если пользователь не ответил ДА
+                return;
             Logger.AddMessages("Выполняется запись уставок");
             try
             {

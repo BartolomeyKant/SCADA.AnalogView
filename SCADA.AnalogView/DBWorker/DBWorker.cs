@@ -117,8 +117,8 @@ namespace SCADA.AnalogView
                 while (reader.Read())               // Чтение всей выборки
                 {
                     Logger.AddMessages("Переописание уставок из базы данных");
-
                     // ------------------------ Чтение общих параметров ---------------------------------
+                    Logger.AddMessages("Чтение общих параметров");
                     commonParam.DBIndex = (uint)(int)reader["index"];           // двойное преобразование потому-что в базе лежат в интах, хотя логичнее в уинтах
                     commonParam.ControllerIndex = (uint)(int)reader["controller_index"];
                     commonParam.Name = reader["DESCRIPTION"] is DBNull ? "" : (string)reader["DESCRIPTION"];
@@ -129,6 +129,7 @@ namespace SCADA.AnalogView
 
                     // ----------------------- Чтение уставок ------------------------------------------
                     // --------------- Технологические --------------------
+                    Logger.AddMessages("Переописание технологических уставок");
                     uint CtrlUst = (uint)(short)reader["CtrlUst"];
 
                     List<UstValue> ustValues = new List<UstValue>(12);
@@ -145,6 +146,8 @@ namespace SCADA.AnalogView
                     }
                     ustavkiContainer.UstValues = ustValues;             // переописание уставок в контейнер
 
+                    // --------------- Инженерные ------------------------------
+                    Logger.AddMessages("Переописание инженерных уставок");
                     ustavkiContainer.ADCMax = new UstValue(
                         reader["scale_max"] is DBNull ? 0 : (float)reader["scale_max"],
                         true,
@@ -185,7 +188,7 @@ namespace SCADA.AnalogView
             }
             catch (Exception e)
             {
-                throw new Exception($"При чтении уставок из базхы данных для тега - '{tag}' возникло исключение", e);
+                throw new Exception($"При чтении уставок из базы данных для тега - '{tag}' возникло исключение", e);
             }
             finally
             {

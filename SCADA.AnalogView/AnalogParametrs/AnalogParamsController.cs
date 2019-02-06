@@ -50,6 +50,10 @@ namespace SCADA.AnalogView.AnalogParametrs
         }
 
         AnalogValue analogValue;                // текущие значение параметра
+        public AnalogValue AnalogValue
+        {
+            get { return analogValue; }
+        }
 
         CommonAnalogParams commonParams;        // общие параметры аналогового сигнала
         public CommonAnalogParams CommonParams
@@ -73,6 +77,8 @@ namespace SCADA.AnalogView.AnalogParametrs
 
             // чтение текущих значений из контроллера
             ReadPLCValue();
+            // настройка тегов для команд
+            SetCmdTags();       
         }
 
 
@@ -169,21 +175,21 @@ namespace SCADA.AnalogView.AnalogParametrs
                 // если есть изменения или были отличия с архивом выолняем запис уставок
                 if (flIsChangedOrDiffValues)
                 {
-                        // параллельная запись в базу и в PLC
-                        // Запись в базу данных
-                        Task t1 = Task.Run(() =>
-                        {
-                            Logger.AddMessages("Запись уставовк в базу данных");
-                            DBWorker.WriteUstavki(Ustavki, commonParams);
-                        });
-                        // Запись в контроллер
-                        Task t2 = Task.Run(() =>
-                        {
-                            Logger.AddMessages("Запись уставок в контроллер");
-                            PLCUstavki.SetPLCUstavki(Ustavki);
-                        });
+                    // параллельная запись в базу и в PLC
+                    // Запись в базу данных
+                    Task t1 = Task.Run(() =>
+                    {
+                        Logger.AddMessages("Запись уставовк в базу данных");
+                        DBWorker.WriteUstavki(Ustavki, commonParams);
+                    });
+                    // Запись в контроллер
+                    Task t2 = Task.Run(() =>
+                    {
+                        Logger.AddMessages("Запись уставок в контроллер");
+                        PLCUstavki.SetPLCUstavki(Ustavki);
+                    });
 
-                        await Task.WhenAll(new[] { t1, t2 });
+                    await Task.WhenAll(new[] { t1, t2 });
 
                     // Сброс флагов состояния уставок
                     Ustavki.ClearState();
@@ -325,7 +331,7 @@ namespace SCADA.AnalogView.AnalogParametrs
             else
             {
                 ust.UpdateValue();
-                throw new UserMessageException($"Значение уставки должно быть в диапазоне от {minValue} до {maxValue}");
+                throw new UserMessageException($"Значение уставки должно быть в диапазоне от {minValue} до {maxValue}", MessageType.Warning);
             }
 
         }
@@ -340,7 +346,8 @@ namespace SCADA.AnalogView.AnalogParametrs
         {
             // объект значения аналогового сигнала
             // подписывается на изменение объекта уставок
-            analogValue = new AnalogValue();
+            // формат представления кодов АЦП времено хардкодится
+            analogValue = new AnalogValue() { ADCFormat = 3, ValueFormat = commonParams.format };
             OnUstConteinerChanged += analogValue._OnConteinerChanged;
             analogValue._OnConteinerChanged(Ustavki);
 
@@ -355,8 +362,10 @@ namespace SCADA.AnalogView.AnalogParametrs
             {
                 await Task.Run(() =>
                 {
-                    PLCValue.GetCurrentAnalogValue(ref analogValue);                                                       // чтение текущих значений
+                    PLCValue.GetCurrentAnalogValue(ref analogValue);                             // чтение текущих значений
                 });
+                // так как подключение к серверу выполнять точно не нужно, нет смысла выполнять ассинхронно
+                PLCValue.SubscribeToChangeAnalogValue(ref analogValue);                          // подписка на изменение значения аналогового сигнала
             }
             catch (UserMessageException exc)
             {
@@ -370,6 +379,65 @@ namespace SCADA.AnalogView.AnalogParametrs
             }
         }
 
+        void SetCmdTags()
+        {
+            PLCValue.SetCmdTags(configuration.CMDIndexTag, configuration.CMDCmdTag, configuration.CMDValueTag);
+        }
+
+
+        #region Команды изменения значений и состояния аналогового сигнала
+        //команда установить имитацию аналогового сигнала
+       public void CmdSetImit()
+        {
+            try
+            {
+                PLCValue.CmdSetImit(analogValue.PLCValue, commonParams.ControllerIndex);
+            }
+            catch (UserMessageException um)
+            {
+                SendUserMessage(um);
+            }
+            catch (Exception e)
+            {
+                Logger.AddError(e);
+            }
+            
+        }
+        // команда снять имитацию аналогового сигнала
+        public void CmdUnsetImit()
+        {
+            try
+            {
+                PLCValue.CmdUnsetImit(commonParams.ControllerIndex);
+            }
+            catch (UserMessageException um)
+            {
+                SendUserMessage(um);
+            }
+            catch (Exception e)
+            {
+                Logger.AddError(e);
+            }
+        }
+        // изменить значение имитации
+        public void CmdChangeImitValue(float value)
+        {
+            analogValue.PLCValue = value;           // предварительно изменяем текущее значение аналогового сигнала
+            try
+            {
+                // записываем новое имитированное значение сигнала
+                PLCValue.CmdChangeImitValue(analogValue.PLCValue,commonParams.ControllerIndex);
+            }
+            catch (UserMessageException um)
+            {
+                SendUserMessage(um);
+            }
+            catch (Exception e)
+            {
+                Logger.AddError(e);
+            }
+        }
+        #endregion
         #endregion
     }
 }

@@ -9,4 +9,3 @@ Z:\Documents\Programming\C#\SCADA.AnalogView\SCADA.AnalogView\SCADA.Logger\bin\D
 Z:\Documents\Programming\C#\SCADA.AnalogView\SCADA.AnalogView\SCADA.Logger\obj\Debug\SCADA.Logger.csproj.CoreCompileInputs.cache
 Z:\Documents\Programming\C#\SCADA.AnalogView\SCADA.AnalogView\SCADA.Logger\obj\Debug\SCADA.Logger.dll
 Z:\Documents\Programming\C#\SCADA.AnalogView\SCADA.AnalogView\SCADA.Logger\obj\Debug\SCADA.Logger.pdb
-Z:\Documents\Programming\C#\SCADA.AnalogView\SCADA.AnalogView\SCADA.Logger\obj\Debug\SCADA.Logger.csprojAssemblyReference.cache

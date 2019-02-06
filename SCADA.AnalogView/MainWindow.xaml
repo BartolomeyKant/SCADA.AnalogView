@@ -38,6 +38,7 @@
             <Setter Property="TextBlock.TextAlignment" Value="Left"/>
             <Setter Property="TextBlock.TextWrapping" Value="WrapWithOverflow" />
             <Setter Property="TextBlock.VerticalAlignment" Value="Center" />
+            <Setter Property="TextBlock.HorizontalAlignment" Value="Left" />
         </Style>
         <!-- Cтиль текст бокса для отображения значения уставки -->
         <Style x:Key="ValueTextBox">
@@ -55,6 +56,32 @@
                 </DataTrigger>
                 <DataTrigger Binding="{Binding Path=Changed}" Value="True">
                     <Setter Property="TextBox.Background" Value="{StaticResource ChangedColor}" />
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+
+        <!-- Стиль текст бокса для отображения текущих значений" -->
+        <Style x:Key="CurrentValueTextBox" >
+            <Setter Property="TextBlock.FontFamily" Value="Arial"/>
+            <Setter Property="TextBlock.FontSize" Value="12"/>
+            <Setter Property="TextBlock.TextAlignment" Value="Right"/>
+            <Setter Property="TextBox.Margin" Value="0"/>
+            <Setter Property="TextBox.MinWidth"  Value="50" />
+            <Setter Property="TextBlock.VerticalAlignment" Value="Center" />
+            <Setter Property="TextBox.Text" Value="{Binding Path=Value}"/>
+            <Setter Property="TextBox.IsReadOnly" Value="{Binding Path=IsReadOnly}" />
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding Path=State}" Value="0">
+                    <Setter Property="TextBox.Background" Value="{StaticResource GrayColor}" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Path=State}" Value="1">
+                    <Setter Property="TextBox.Background" Value="{StaticResource GreenColor}" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Path=State}" Value="2">
+                    <Setter Property="TextBox.Background" Value="{StaticResource YellowColor}" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Path=State}" Value="3">
+                    <Setter Property="TextBox.Background" Value="{StaticResource RedColor}" />
                 </DataTrigger>
             </Style.Triggers>
         </Style>
@@ -134,7 +161,7 @@
                       <RowDefinition Height="0.8*"/>
                 </Grid.RowDefinitions>
                 <!-- Значения -->
-                   <Grid Grid.Row="0" Margin="5,5,5,0">
+                <Grid x:Name ="ValueGrid" Grid.Row="0" Margin="5,5,5,0">
 
                     <Grid.RowDefinitions >
                         <RowDefinition />
@@ -153,36 +180,46 @@
                     <TextBlock Grid.Row ="0" Grid.Column="0" Grid.ColumnSpan="2" Text="Текущее значение" Style="{StaticResource SectionLable}"/>
 
                     <TextBlock Grid.Row="1" Grid.Column="1" Text="Инж. величина" Style="{StaticResource MiniLable}"/>
-                    <Grid Grid.Row="2" Grid.Column="0" Style="{StaticResource ValueGrid}">
+                    <Grid x:Name="ENGValueGrid" Grid.Row="2" Grid.Column="0" Style="{StaticResource ValueGrid}">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="0.7*"/>
                             <ColumnDefinition Width="0.3*"/>
                         </Grid.ColumnDefinitions>
-                        <TextBox Grid.Column ="0" Text="123" Style="{StaticResource ValueTextBox}"/>
-                        <TextBlock Grid.Column ="1" Text="МПа" Style="{StaticResource EguStyle}"/>
+                        <TextBox Grid.Column ="0" Style="{StaticResource CurrentValueTextBox}" IsReadOnly="True"/>
+                        <TextBlock Grid.Column ="1" Text="{Binding Path=Egu}" Style="{StaticResource EguStyle}"/>
                     </Grid>
-                    <Grid Grid.Row="2" Grid.Column="1" Style="{StaticResource ValueGrid}">
+                    <Grid x:Name ="ADCValueGrid"  Grid.Row="2" Grid.Column="1" Style="{StaticResource ValueGrid}">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="0.7*"/>
                             <ColumnDefinition Width="0.3*"/>
                         </Grid.ColumnDefinitions>
-                        <TextBox Grid.Column ="0" Text="123" Style="{StaticResource ValueTextBox}"/>
-                        <TextBlock Grid.Column ="1" Text="мА" Style="{StaticResource EguStyle}"/>
+                        <TextBox Grid.Column ="0" Style="{StaticResource CurrentValueTextBox}" IsReadOnly="True" />
+                        <TextBlock Grid.Column ="1" Text="{Binding Path=Egu}" Style="{StaticResource EguStyle}"/>
                     </Grid>
 
                     <Border Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="2" Grid.RowSpan="3" BorderThickness="1" BorderBrush="Gray" Margin="0,0,0,-1" />
 
                     <TextBlock Grid.Row ="3" Grid.Column="0" Grid.ColumnSpan="2" Text="Имитированное значение" Style="{StaticResource SectionLable}"/>
-                    <Grid Grid.Row="4" Grid.Column="0" Style="{StaticResource ValueGrid}">
+                    <Grid x:Name ="PLCValueGrid"  Grid.Row="4" Grid.Column="0" Style="{StaticResource ValueGrid}">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="0.7*"/>
                             <ColumnDefinition Width="0.3*"/>
                         </Grid.ColumnDefinitions>
-                        <TextBox Grid.Column ="0" Text="123" Style="{StaticResource ValueTextBox}" />
-                        <TextBlock Grid.Column ="1" Text="МПа" Style="{StaticResource EguStyle}"/>
+                        <TextBox Grid.Column ="0"  Style="{StaticResource CurrentValueTextBox}" KeyDown="ImitValueKeyDown"/>
+                        <TextBlock Grid.Column ="1" Text="{Binding Path=Egu}" Style="{StaticResource EguStyle}"/>
                     </Grid>
 
-                    <Button Name="ImitBtn" Grid.Row="4" Grid.Column="1" Margin="2,2">
+                    <Button Name="ImitBtn" Grid.Row="4" Grid.Column="1" Margin="2,2" Click="ImitBtn_Click">
+                        <Button.Style>
+                            <!-- Анимация кнопки при имитации -->
+                                <Style>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding Path=IsImit}" Value="True">
+                                        <Setter Property="Button.Background" Value="{StaticResource MagentaColor}"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Button.Style>
                         <TextBlock Text="Имитация" VerticalAlignment="Center" FontSize="12" FontFamily="Arial"/>
                     </Button>
                 </Grid>

@@ -48,3 +48,4 @@ Z:\Documents\Programming\C#\SCADA.AnalogView\SCADA.AnalogView\SCADA.AnalogView\o
 Z:\Documents\Programming\C#\SCADA.AnalogView\SCADA.AnalogView\SCADA.AnalogView\obj\Debug\DialogWindows\MessageWindow.g.cs
 Z:\Documents\Programming\C#\SCADA.AnalogView\SCADA.AnalogView\SCADA.AnalogView\obj\Debug\DialogWindows\DialogWindow.baml
 Z:\Documents\Programming\C#\SCADA.AnalogView\SCADA.AnalogView\SCADA.AnalogView\obj\Debug\DialogWindows\MessageWindow.baml
+Z:\Documents\Programming\C#\SCADA.AnalogView\SCADA.AnalogView\SCADA.AnalogView\bin\Debug\Proficy.Historian.ClientAccess.API.dll

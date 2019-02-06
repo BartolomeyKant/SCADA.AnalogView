@@ -19,7 +19,7 @@ namespace SCADA.AnalogView
      ===========================================================
      В классе реализуются методы чтения / записи данных через OPCDA
          */
-    class OPCDAWorker:IPLCAnalogUstavki, IPLCAnalogValue
+    class OPCDAWorker : IPLCAnalogUstavki, IPLCAnalogValue
     {
         string[] ustvakiTags;
         string[] cmdTags;
@@ -29,6 +29,12 @@ namespace SCADA.AnalogView
 
         Item[] ustavkiItems;
         Item[] valueItems;
+        Item[] cmdItems;
+
+        SubscriptionState grState;
+        Subscription grReadAnalogValue;
+
+        AnalogValue subscribeValue;
 
         /// <summary>
         /// Создание объекта для работы с OPC DA serverom
@@ -88,7 +94,7 @@ namespace SCADA.AnalogView
                 if (result[i].Quality != Quality.Good)
                 {
                     flIsSuccess = false;
-                    Logger.AddWarning($"Для тега {result[i].ItemName} не прочитано значение с ошибкой {result[i].ResultID}");
+                    Logger.AddWarning($"Для тега {result[i].ItemName} не прочитано значение с качеством {result[i].Quality} и ошибкой {result[i].ResultID}");
                 }
             }
             if (!flIsSuccess)
@@ -153,10 +159,10 @@ namespace SCADA.AnalogView
             // Технологичнские уставки
             for (int i = 0; i < 12; i++)
             {
-                values[8+i].Value = ustavkiContainer.UstValues[i].Value;
-                ustEnable = ustEnable + (uint)((ustavkiContainer.UstValues[i].Used ? 1: 0) << i);
+                values[8 + i].Value = ustavkiContainer.UstValues[i].Value;
+                ustEnable = ustEnable + (uint)((ustavkiContainer.UstValues[i].Used ? 1 : 0) << i);
             }
-            values[7].Value = ustEnable;    
+            values[7].Value = ustEnable;
 
             values[20].Value = 1;           // Команда записи уставок с ВУ в СУ
 
@@ -188,14 +194,14 @@ namespace SCADA.AnalogView
 
         #endregion
 
-
+        #region Работа с текущими значениями контроллера
         /// <summary>
         /// настройка тегов аналогового сигнала 
         /// </summary>
         /// <param name="ADCTag">тег кода АЦП</param>
         /// <param name="PLCValueTag">тег текущего значения аналогового сигнала</param>
         /// <param name="AnalogState">тег состояния аналогового сигнала</param>
-        public void SetAnalogTags(string ADCTag, string PLCValueTag, string AnalogState )
+        public void SetAnalogTags(string ADCTag, string PLCValueTag, string AnalogState)
         {
             // теги добавляются строго в заданном порядке
             valueTags = new string[3];
@@ -207,7 +213,7 @@ namespace SCADA.AnalogView
             valueItems = new Item[3];
             for (int i = 0; i < 3; i++)
             {
-                valueItems[i] = new Item() { ItemName = valueTags[i]};
+                valueItems[i] = new Item() { ItemName = valueTags[i] };
             }
 
         }
@@ -234,11 +240,11 @@ namespace SCADA.AnalogView
                 if (result[i].Quality != Quality.Good)
                 {
                     flSuccess = false;
-                    Logger.AddWarning($"Для тега {result[i].ItemName} не прочитано значение с ошибкой {result[i].ResultID}");
+                    Logger.AddWarning($"Для тега {result[i].ItemName} не прочитано значение с качеством {result[i].Quality} и ошибкой {result[i].ResultID}");
                 }
             }
             if (!flSuccess)
-                throw new UserMessageException("Считанные уставки из контроллера не достоверны", MessageType.Warning);
+                throw new UserMessageException("Считанные данные из контроллера недостоверны", MessageType.Warning);
 
             // переописание значений
             try
@@ -256,22 +262,144 @@ namespace SCADA.AnalogView
 
         public void SubscribeToChangeAnalogValue(ref AnalogValue value)
         {
-            throw new NotImplementedException();
+            Logger.AddMessages("Выполняется пожписка на изменене аналогового значения");
+            try
+            {
+                subscribeValue = value;         // берем ссылку на значение с которым будем работать
+
+                grState = new SubscriptionState() { Name = "SubscribeToAnalogValue", Active = true, UpdateRate = 300 };
+
+                grReadAnalogValue = (Subscription)server.CreateSubscription(grState);
+                grReadAnalogValue.AddItems(valueItems);
+                // Добавляем обработчик изменения аналогового значения
+                grReadAnalogValue.DataChanged += (object subsHandle, object requestHandle, ItemValueResult[] result) =>
+                {
+                    foreach (ItemValueResult res in result)         // массив результирующих значений может быть переменной длинны
+                    {
+                        if (res.Quality == Quality.Good)
+                        {
+                            // В зависимости от имени тега присваиваем значение
+                            // почему switch работает только с константными значениями
+                            if (res.ItemName == valueTags[0])
+                            {
+                                subscribeValue.ADCValue = (float)res.Value;
+                            }
+                            else if (res.ItemName == valueTags[1])
+                            {
+                                subscribeValue.PLCValue = (float)res.Value;
+                            }
+                            else if (res.ItemName == valueTags[2])
+                            {
+                                subscribeValue.AnalogState = (ushort)res.Value;
+                            }
+                            else
+                            {
+                                Logger.AddWarning($"Прочитан неизвестный тег {res.ItemName}, значение не будет обработано");
+                            }
+                        }
+                    }
+                };
+                subscribeValue.SubscribeComplite = true;            // отмечаем, что подписка оформлена
+            }
+            catch (Exception e)
+            {
+                throw new Exception("При выполнении подписки на изменения значений аналогового сигнала возникло исключение", e);
+            }
+        }
+        #endregion
+        /// <summary>
+        /// Задать теги для команд
+        /// </summary>
+        /// <param name="idTag"></param>
+        /// <param name="cmdTag"></param>
+        /// <param name="valueTag"></param>
+        public void SetCmdTags(string idTag, string cmdTag, string valueTag)
+        {
+            cmdTags = new string[3];
+            cmdTags[0] = idTag;
+            cmdTags[1] = cmdTag;
+            cmdTags[2] = valueTag;
+
+            cmdItems = new Item[cmdTags.Length];
+            for (int i = 0; i < cmdTags.Length; i++)
+            {
+                cmdItems[i] = new Item() { ItemName = cmdTags[i] };
+            }
         }
 
-        public void CmdSetImit(float ImitValue)
+        /// <summary>команда установить имитацию</summary> 
+        public void CmdSetImit(float ImitValue, uint id)
         {
-            throw new NotImplementedException();
+            SetValue(id, 1, ImitValue);         // записываем в контроллер команду - установить имитацию
+        }
+        /// <summary>
+        /// команда снять имитацию
+        /// </summary>
+        /// <param name="id"></param>
+        public void CmdUnsetImit(uint id)
+        {
+            SetValue(id, 2, 0);         // записываем в контроллер команду - снять имитацию
         }
 
-        public void CmdUnsetImit()
+        /// <summary>
+        ///  команда изменить значение
+        /// </summary>
+        /// <param name="ImitValue"></param>
+        /// <param name="id"></param>
+        public void CmdChangeImitValue(float ImitValue, uint id)
         {
-            throw new NotImplementedException();
+            SetValue(id, 3, ImitValue);         // записываем в контроллер команду - изменить имитированное значение
         }
 
-        public void CmdChangeImitValue(float ImitValue)
+        // записываем команду в OPC сервер
+        void SetValue(uint id, int cmd, float value)
         {
-            throw new NotImplementedException();
+            // если сервер не подключен, пробуем подключить
+            try
+            {
+                Logger.AddMessages($"Попытка подключения к opc da серуеру {server.Url}");
+                if (!server.IsConnected)
+                    server.Connect();
+            }
+            catch (Exception e)
+            {
+                throw new Exception($"Ошибка подключения к OPC DA серверу {server.Url} для установки команды аналогового сигнала", e);
+            }
+
+            // создаем объекты значений и переписываем значения в них
+            ItemValue[] values = new ItemValue[cmdItems.Length];
+            for (int i = 0; i < cmdItems.Length; i++)
+            {
+                values[i] = new ItemValue(cmdItems[i]);
+            }
+            values[0].Value = id;               // идентификатор сигнала
+            values[1].Value = cmd;              // 1- установить имитацию, 2- снять имитацию, 3 - поменять значение
+            values[2].Value = value;            // новое значение
+
+            try
+            {
+                bool flSuccess = true;
+                IdentifiedResult[] result = server.Write(values);
+                for (int i = 0; i < result.Length; i++)
+                {
+                    if (result[i].ResultID != ResultID.S_OK)
+                    {
+                        flSuccess = false;
+                        Logger.AddWarning($"Для уставки с тегом {result[i].ItemName} значение записано с ошибкой {result[i].ResultID}");
+                    }
+                }
+                if (!flSuccess)
+                {
+                    throw new UserMessageException("Команда не установлена", MessageType.Error);
+                }
+                Logger.AddMessages("Выполнена запись команды");
+            }
+            catch (UserMessageException exc)
+            { throw exc; }
+            catch (Exception e)
+            {
+                throw new Exception($"При записи команды в OPC сервер {server.Url} возникло исключение", e);
+            }
         }
     }
 }

@@ -18,6 +18,8 @@ namespace SCADA.AnalogView.AnalogParametrs
     {
         AnalogParamsController analogController;
 
+        
+
         Dispatcher dispatcher;
 
         UstContainerViewModel ustContainer;
@@ -29,6 +31,18 @@ namespace SCADA.AnalogView.AnalogParametrs
             get
             {
                 return ustContainer;
+            }
+        }
+
+        ValueViewModel valueViewModel;
+        /// <summary>
+        /// модель представления текущего значения
+        /// </summary>
+        public ValueViewModel ValueViewModel
+        {
+            get
+            {
+                return valueViewModel;
             }
         }
 
@@ -56,6 +70,9 @@ namespace SCADA.AnalogView.AnalogParametrs
             analogController = controller;
             ustContainer = new UstContainerViewModel(controller.Ustavki);           // преставление контейнера уставок
             analogController.OnUstConteinerChanged += ustContainer.OnContextChange;        // привязка к событию изменния контекста уставок
+
+            valueViewModel = new ValueViewModel(analogController.AnalogValue, analogController.CommonParams.AdcEgu, analogController.CommonParams.Egu);          // представление текущего значения аналогового сигнала
+
             // получения диспетчера для текущего потока
             // создание данного объекта будет выполняться в главном потоке
             dispatcher = Dispatcher.CurrentDispatcher;
@@ -70,16 +87,15 @@ namespace SCADA.AnalogView.AnalogParametrs
         void SendUSerMessageEventHandler(UserMessageException exc)
         {
             // открытие информационного окна, обязательно через диспетчер, так как событие может вылетать в разных потоках
-            //dispatcher?.Invoke(() => { Dialogs.ShowException(exc); });
             Dialogs.ShowException(exc);
         }
 
         /// <summary>
-        /// Функция обработки введенного значения уставки
+        /// Функция проверяет введенное значение и переводит его в число
         /// </summary>
         /// <param name="txValue"></param>
-        /// <param name="ust"></param>
-        public void SetNewUstValue(string txValue, UstValue ust)
+        /// <returns></returns>
+        float CheckNewValue(string txValue)
         {
             // первоначально парсинг нового значения
             float newValue = 0;
@@ -89,7 +105,7 @@ namespace SCADA.AnalogView.AnalogParametrs
                 { // Сначала пробуем влоб
                     newValue = float.Parse(txValue);
                 }
-                catch (FormatException )
+                catch (FormatException)
                 {
                     // пробуем поменять DecimalSeparator
                     string separator = "";
@@ -100,27 +116,39 @@ namespace SCADA.AnalogView.AnalogParametrs
                     newValue = float.Parse(txValue, fp);
                 }
                 Logger.AddMessages($"Пользователь ввел число - {newValue}");
-                // запись нового значения уставки
-                try
-                {
-                    analogController.SetNewUstValue(newValue, ust);
-                }
-                catch (UserMessageException um)
-                {
-                    Logger.AddWarning(um);
-                }
             }
             catch (FormatException fe)
             {
-                ust.UpdateValue();          // пустое обновление значения
                 Logger.AddWarning(new Exception($"Похоже пользователь ввел не число - '{txValue}'", fe));
-                return;
+                throw new UserMessageException("Введенное значение должно быть числом!", MessageType.Warning);
             }
             catch (Exception e)
             {
-                ust.UpdateValue();
                 Logger.AddError(new Exception($"При попытке изменить значение уставки возникло исключние - '{txValue}'", e));
-                return;
+                throw new UserMessageException("При обработке значения возникло исключение!", e, MessageType.Error);
+            }
+            return newValue;
+        }
+
+        /// <summary>
+        /// Функция обработки введенного значения уставки
+        /// </summary>
+        /// <param name="txValue"></param>
+        /// <param name="ust"></param>
+        public void SetNewUstValue(string txValue, UstValue ust)
+        {
+            float newValue = 0;
+            // запись нового значения уставки
+            try
+            {
+                newValue = CheckNewValue(txValue);                          // преобразуем текстовое значение в float
+                analogController.SetNewUstValue(newValue, ust);             // записываем новое значение в уставки
+            }
+            catch (UserMessageException um)
+            {
+                Dialogs.ShowException(um);
+                Logger.AddWarning(um);
+                ust.UpdateValue();          // пустое обновление значения
             }
         }
 
@@ -129,6 +157,7 @@ namespace SCADA.AnalogView.AnalogParametrs
         /// </summary>
         public void WriteUsts()
         {
+            // TODO сделать проверку прав пользователя
             ResultDialog res = Dialogs.ShowDialogMessage("Выполнить ввод уставок?", MessageType.Question);
             if (res != ResultDialog.Yes)            // если пользователь не ответил ДА
                 return;
@@ -140,6 +169,7 @@ namespace SCADA.AnalogView.AnalogParametrs
             catch (UserMessageException um)
             {
                 // выввод сообщения пользователю
+                Dialogs.ShowException(um);
                 Logger.AddWarning(um);
             }
             catch (Exception e)
@@ -147,5 +177,66 @@ namespace SCADA.AnalogView.AnalogParametrs
                 Logger.AddError(e);
             }
         }
+
+        // команад установки/снятия имитации
+        public void TogleImit()
+        {
+            Logger.AddMessages("Переключение режима имитации");
+            // TODO сделать проверку прав пользователя
+            string dialogMessage;                       // TODO сделать проверку текущего состояния аналога без имитации и выдать соответствующее соообщение
+            if (valueViewModel.IsImit)
+            {
+                dialogMessage = "Вы уверены что хотите снять режим имитации?";
+            }
+            else
+            {
+                dialogMessage = "Вы уверены что хотите установить режим имитации?";
+            }
+            // TODO MessageType тоже выставлять в зависимости от состояния аналогового сигнала без имитации
+            ResultDialog res = Dialogs.ShowDialogMessage(dialogMessage, MessageType.Question);
+            if (res == ResultDialog.Yes)
+            {
+                Logger.AddMessages("Пользователь решил переключить режим имитации");
+                if (valueViewModel.IsImit)
+                {
+                    analogController.CmdUnsetImit();            // снять иимитацию
+                }
+                else
+                {
+                    analogController.CmdSetImit();            // установить иимитацию
+                }
+            }
+            else
+            {
+                Logger.AddMessages("Пользователь отказался от переключения режима иммитации");
+            }
+        }
+
+        /// <summary>
+        /// Функция изменения текущего имитированного значения
+        /// </summary>
+        /// <param name="txValue">текстовое значение</param>
+        public void ChangeImitValue(string txValue)
+        {
+            float value = 0;
+            try
+            {
+                value = CheckNewValue(txValue);
+                // TODO сделать коррректировку диалогового сообщения с учетом текущего состояния аналогового сигнала без имитации
+                ResultDialog res = Dialogs.ShowDialogMessage($"Вы уверены, что хотите установить значение имитации: {value}", MessageType.Question);
+                if (res == ResultDialog.Yes)            // если пользователь согласился
+                {
+                    analogController.CmdChangeImitValue(value);
+                }
+            }
+            catch (UserMessageException um)
+            {
+                Dialogs.ShowException(um);
+                Logger.AddWarning(um);
+            }
+
+            
+        }
+        
     }
 }

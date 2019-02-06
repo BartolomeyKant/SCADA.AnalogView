@@ -8,6 +8,7 @@ using System.Windows.Input;
 using SCADA.Logging;
 using SCADA.AnalogView.AnalogParametrs;
 using SCADA.AnalogView.DialogWindows;
+using SCADA.AnalogView.HistoriacalData;
 
 namespace SCADA.AnalogView
 {
@@ -20,6 +21,8 @@ namespace SCADA.AnalogView
 
         AnalogParamsController analogController = null;
         AnalogViewModel analogView = null;
+
+        HistoricalData histData = null;
 
         public MainWindow()
         {
@@ -69,8 +72,17 @@ namespace SCADA.AnalogView
 
                 ADCTag = "PLC!arElInput[x]",                // код АЦП
                 ValueTag = "PLC!arAIValue[x]",              // тег значения
-                AnalogStateTag = "PLC!awAIKCReg[x]"         // тег состояния
-            };
+                AnalogStateTag = "PLC!awAIKCReg[x]",         // тег состояния
+
+                CMDIndexTag = "PLC!arrCmdAI[1].id",         // команда - индекс сигнала
+                CMDCmdTag = "PLC!arrCmdAI[1].cmd",           // команад - команда
+                CMDValueTag = "PLC!arrCmdAI[1].value",          // команда - значение
+
+                MaxHistoricalPoints = 2000,                    // максимальное количество точек
+                MaxHistoricalTimeDuration = 600,               // максимальный промеэуток времени cек
+                HistoricalUpdateTime = 500,                    // время обновления тегов при подписке мсек
+                HistorianTagName = "Fix.PLC!arAIValue[x]"      // тег в хисториан
+    };
 
             // инциализация логгера
             //===========================================================
@@ -96,10 +108,6 @@ namespace SCADA.AnalogView
             Logger.LogsDayCount = config.LogDaysStore;
             Logger.InitializeLogger();
 
-            Logger.AddMessages("Тестовое сообщение");
-            Logger.AddWarning("Тестовое предупреждение");
-            Logger.AddError(new Exception("Тестовая ошибка", new Exception("Продолжение")));
-
             // ============ создание контроллера для аналогового параметра
             try
             {
@@ -109,6 +117,7 @@ namespace SCADA.AnalogView
             catch (Exception e)
             {
                 Logger.AddError(e);
+                return;
             }
 
             // ============== создание модели представления аналогового сигнала =================
@@ -117,10 +126,23 @@ namespace SCADA.AnalogView
                 Logger.AddMessages("Создание объекта визуального предсталвения аналогового параметра");
                 analogView = new AnalogViewModel(analogController);
                 InitializeUstavki();
+                InitializeValueGrid();
             }
             catch (Exception e)
             {
                 Logger.AddError(e);
+                return;
+            }
+
+            // ================ создание объекта для подключения к историческим данным
+            try
+            {
+                histData = new HistoricalData(new HistorianServiceBuilder(config, analogController), config);
+            }
+            catch (Exception e)
+            {
+                Logger.AddError(e);
+                return;
             }
 
         }
@@ -136,6 +158,14 @@ namespace SCADA.AnalogView
             VPD.DataContext = analogView.UstContainer.VPD;
             NPD.DataContext = analogView.UstContainer.NPD;
             Hister.DataContext = analogView.UstContainer.Hister;
+        }
+
+        void InitializeValueGrid()
+        {
+            ValueGrid.DataContext = analogView.ValueViewModel;
+            ENGValueGrid.DataContext = analogView.ValueViewModel.EngValue;
+            ADCValueGrid.DataContext = analogView.ValueViewModel.ADCValue;
+            PLCValueGrid.DataContext = analogView.ValueViewModel.PLCValue;
         }
 
         void UstavkiFieldKewDown(object sender, KeyEventArgs e)
@@ -157,6 +187,21 @@ namespace SCADA.AnalogView
         private void Window_Loaded(object sender, RoutedEventArgs e)
         {
             Dialogs.ownerWindow = this;
+        }
+
+        // переключить имитацию
+        private void ImitBtn_Click(object sender, RoutedEventArgs e)
+        {
+            analogView.TogleImit();
+        }
+        // задать ноовое значение имитации
+        private void ImitValueKeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key == Key.Enter)
+            {
+                TextBox tb = (TextBox)sender;
+                analogView.ChangeImitValue(tb.Text);
+            }
         }
     }
 }

@@ -17,17 +17,17 @@ namespace SCADA.AnalogView.HistoriacalData
     /// </summary>
     class HistoricalData
     {
-        List<HistoricalDataPoint> dataPoints;
+        HistorianDataPointBuffer dataPoints;
         /// <summary>
         /// Набор исторических данных, если набор пустой, то возвращается пустой список
         /// </summary>
-        public List<HistoricalDataPoint> DataPoints
+        public HistorianDataPointBuffer DataPoints
         {
             get
             {
                 if (dataPoints == null)
                 {
-                    return new List<HistoricalDataPoint>();
+                    return new HistorianDataPointBuffer(0);
                 }
                 else
                 {
@@ -62,7 +62,7 @@ namespace SCADA.AnalogView.HistoriacalData
         // получение набора исторических данных
         async void  InitDataPoints()
         {
-            dataPoints = new List<HistoricalDataPoint>((int)configuration.MaxHistoricalPoints);
+            dataPoints = new HistorianDataPointBuffer(configuration.MaxHistoricalPoints);
             try
             {
                 await Task.Run(() =>
@@ -80,16 +80,11 @@ namespace SCADA.AnalogView.HistoriacalData
                 Logger.AddError(e);
             }
         }
-
+        // обработчик новых значений
         void HistDataChange(HistoricalDataPoint[] points)
         {
             // добавляем новые точки в общий массив
             dataPoints.AddRange(points);
-            // удаляем лишний точки
-            if (dataPoints.Count > configuration.MaxHistoricalPoints)
-            {
-                dataPoints.RemoveRange(0, (int)(dataPoints.Count - configuration.MaxHistoricalPoints));
-            }
         }
 
     }

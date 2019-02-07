@@ -144,6 +144,7 @@
       <DependentUpon>DialogWindow.xaml</DependentUpon>
     </Compile>
     <Compile Include="HistoriacalData\DataView.cs" />
+    <Compile Include="HistoriacalData\HistorianDataPointBuffer.cs" />
     <Compile Include="HistoriacalData\HistoricalData.cs" />
     <Compile Include="HistoriacalData\HistoricalDataPoint.cs" />
     <Compile Include="HistoriacalData\HistoricalInterfaces\IHistGetData.cs" />

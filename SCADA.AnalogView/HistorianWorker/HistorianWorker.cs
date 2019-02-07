@@ -61,7 +61,12 @@ namespace SCADA.AnalogView
             HistoricalDataPoint[] points = new HistoricalDataPoint[MaxPointCount];
 
             // Формируем запрос на чтение данных
-            DataQueryParams query = new RawByTimeQuery(DateTime.Now.AddSeconds(-1 * MaxTimeDuration), TagName);
+            DataQueryParams query = new DataQueryParams(new string[] { TagName});
+            query.Criteria.Start = DateTime.Now.AddSeconds(-1 * MaxTimeDuration);           // время начала выборки
+            query.Criteria.End = DateTime.Now;                                              // время окончания выборки
+            query.Criteria.SamplingMode = DataCriteria.SamplingModeType.RawByTime;          // выбираем сырые значения по времени 
+
+            query.Fields = DataFields.Quality | DataFields.Value | DataFields.Time;
             ItemErrors errors;
             DataSet dataSet;
 

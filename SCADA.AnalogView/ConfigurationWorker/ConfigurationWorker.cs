@@ -26,7 +26,15 @@ namespace SCADA.AnalogView
         public string Indexator { get; set; }
         public string[] UstavkiTags { get; set; }
 
-        
+        public string CMDIndexTag { get; set; }
+        public string CMDCmdTag { get; set; }
+        public string CMDValueTag { get; set; }
 
+        public uint MaxHistoricalPoints { get; set; }
+        public uint MaxHistoricalTimeDuration { get; set; }
+        public uint HistoricalUpdateTime { get; set; }
+        public string HistorianTagName { get; set; }
+
+        public uint ChartUpdateTime { get; set; }
     }
 }

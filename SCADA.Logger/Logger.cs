@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -38,10 +37,6 @@ namespace SCADA.Logging
         /// </summary>
         public static int LogsDayCount;
 
-        static Queue<Exception> messages;            // просто сообщения
-        static Queue<Exception> warnings;           // предупреждения
-        static Queue<Exception> errors;             // ошибки
-
         static FileInfo logFile;
         static StreamWriter writter;
 
@@ -68,7 +63,6 @@ namespace SCADA.Logging
             // удаление файлов старше указанного времени
             foreach (FileInfo file in files)
             {
-
                 if (nowTime.Subtract(file.CreationTime).Days >= LogsDayCount)
                 {
                     file.Delete();
@@ -79,20 +73,6 @@ namespace SCADA.Logging
             if (!logFile.Exists)
             {
                 logFile.Create();
-            }
-
-            // инциализация очередей для разных видов сообщений
-            switch (DebugLevel)
-            {
-                case DebugLevel.All:
-                    messages = new Queue<Exception>();
-                    goto case DebugLevel.Warnings;
-                case DebugLevel.Warnings:
-                    warnings = new Queue<Exception>();
-                    goto case DebugLevel.Errors;
-                case DebugLevel.Errors:
-                    errors = new Queue<Exception>();
-                    break;
             }
 
             locker = new object();
@@ -126,10 +106,13 @@ namespace SCADA.Logging
             {
                 Exception exc = new Exception(message);
 
-                lock (locker)
+                await Task.Run(() =>                // ассинхронный запуск функции печати сообщения в лог
                 {
-                    PrintLog(exc);
-                }
+                    lock (locker)
+                    {
+                        PrintLog(exc);
+                    }
+                });
             }
         }
         /// <summary>
@@ -167,6 +150,10 @@ namespace SCADA.Logging
             }
         }
 
+        ///<summary> 
+        /// Функция печати сообщения в лог. Так как используется общий ресурс writter - необходимо выполнять в кретической секции
+        ///</summary>
+        /// <param name="exc">Исключение, хранящее в себе сообщение</param>
         static void PrintLog(Exception exc)
         {
             while (true)
@@ -176,7 +163,7 @@ namespace SCADA.Logging
                     writter = logFile.AppendText();
                     break;
                 }
-                catch (IOException e)               // если ошибка ввода-вывод, то пробем еще раз
+                catch (IOException)               // если ошибка ввода-вывод, то пробем еще раз
                 {
                     Thread.Sleep(10);
                     continue;
@@ -193,7 +180,7 @@ namespace SCADA.Logging
         // печать сообщений в файл логов
         static void printExsceptionToFile(Exception exc)
         {
-            string mess = DateTime.Now.ToString("yyyy-MM-dd hh:mm:ss.ffff") + " - " + exc.Message;
+            string mess = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.ffff") + " - " + exc.Message;
             writter.Write(mess);
             if (exc.InnerException != null)
             {

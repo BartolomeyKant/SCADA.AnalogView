@@ -13,6 +13,21 @@
     <ProjectTypeGuids>{60dc8134-eba5-43b8-bcc9-bb4bc16c2548};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
     <WarningLevel>4</WarningLevel>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
+    <PublishUrl>publish\</PublishUrl>
+    <Install>true</Install>
+    <InstallFrom>Disk</InstallFrom>
+    <UpdateEnabled>false</UpdateEnabled>
+    <UpdateMode>Foreground</UpdateMode>
+    <UpdateInterval>7</UpdateInterval>
+    <UpdateIntervalUnits>Days</UpdateIntervalUnits>
+    <UpdatePeriodically>false</UpdatePeriodically>
+    <UpdateRequired>false</UpdateRequired>
+    <MapFileExtensions>true</MapFileExtensions>
+    <ApplicationRevision>0</ApplicationRevision>
+    <ApplicationVersion>1.0.0.%2a</ApplicationVersion>
+    <IsWebBootstrapper>false</IsWebBootstrapper>
+    <UseApplicationTrust>false</UseApplicationTrust>
+    <BootstrapperEnabled>true</BootstrapperEnabled>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <PlatformTarget>AnyCPU</PlatformTarget>
@@ -23,6 +38,7 @@
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+    <Prefer32Bit>true</Prefer32Bit>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <PlatformTarget>AnyCPU</PlatformTarget>
@@ -53,6 +69,9 @@
     <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
     <Prefer32Bit>true</Prefer32Bit>
   </PropertyGroup>
+  <PropertyGroup>
+    <ApplicationIcon>ammeter.ico</ApplicationIcon>
+  </PropertyGroup>
   <ItemGroup>
     <Reference Include="ntvl.InteractiveDataDisplay.WPF">
       <HintPath>..\Imports\InteractiveDataDisplay\ntvl.InteractiveDataDisplay.WPF.dll</HintPath>
@@ -68,6 +87,7 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\Imports\OpcNetApi.Com.dll</HintPath>
     </Reference>
+    <Reference Include="Proficy.Historian.ClientAccess.API, Version=1.3.1.0, Culture=neutral, PublicKeyToken=97ba21b67a10e5d8, processorArchitecture=MSIL" />
     <Reference Include="System" />
     <Reference Include="System.Data" />
     <Reference Include="System.Reactive">
@@ -91,6 +111,10 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
+    <Page Include="DialogWindows\DialogWindow.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
     <Page Include="MainWindow.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
@@ -98,8 +122,7 @@
     <Compile Include="AnalogParametrs\AnalogInterfaces\IAnalogServiceBuilder.cs" />
     <Compile Include="AnalogParametrs\AnalogInterfaces\IDBWorker.cs" />
     <Compile Include="AnalogParametrs\AnalogInterfaces\IPLCAnalogUstavki.cs" />
-    <Compile Include="AnalogParametrs\AnalogInterfaces\IPLCAnalogValueReader.cs" />
-    <Compile Include="AnalogParametrs\AnalogInterfaces\IPLCAnalogValueWriter.cs" />
+    <Compile Include="AnalogParametrs\AnalogInterfaces\IPLCAnalogValue.cs" />
     <Compile Include="AnalogParametrs\AnalogParamsController.cs" />
     <Compile Include="AnalogParametrs\AnalogValue.cs" />
     <Compile Include="AnalogParametrs\AnalogViewModel.cs" />
@@ -108,6 +131,7 @@
     <Compile Include="AnalogParametrs\UstContainerViewModel.cs" />
     <Compile Include="AnalogParametrs\UstValue.cs" />
     <Compile Include="AnalogParametrs\UstViewModel.cs" />
+    <Compile Include="AnalogParametrs\ValueViewModel.cs" />
     <Compile Include="AnalogServiceBuilder\AnalogServiceBuilder.cs" />
     <Compile Include="App.xaml.cs">
       <DependentUpon>App.xaml</DependentUpon>
@@ -115,13 +139,35 @@
     </Compile>
     <Compile Include="ConfigurationWorker\ConfigurationWorker.cs" />
     <Compile Include="DBWorker\DBWorker.cs" />
+    <Compile Include="DialogWindows\Dialogs.cs" />
+    <Compile Include="DialogWindows\DialogWindow.xaml.cs">
+      <DependentUpon>DialogWindow.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="HistoriacalData\DataView.cs" />
+    <Compile Include="HistoriacalData\HistorianDataPointBuffer.cs" />
+    <Compile Include="HistoriacalData\HistoricalData.cs" />
+    <Compile Include="HistoriacalData\HistoricalDataPoint.cs" />
+    <Compile Include="HistoriacalData\HistoricalInterfaces\IHistGetData.cs" />
+    <Compile Include="HistoriacalData\HistoricalInterfaces\IHistGetSubscribe.cs" />
+    <Compile Include="HistoriacalData\HistoricalInterfaces\IHistoricalServiceBuilder.cs" />
+    <Compile Include="HistoriacalData\HistoricalInterfaces\IHistoricalView.cs" />
+    <Compile Include="HistorianServiceBuilder\HistorianServiceBuilder.cs" />
+    <Compile Include="HistorianWorker\HistorianWorker.cs" />
     <Compile Include="MainWindow.xaml.cs">
       <DependentUpon>MainWindow.xaml</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
+    <Page Include="DialogWindows\MessageWindow.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="DialogWindows\MessageWindow.xaml.cs">
+      <DependentUpon>MessageWindow.xaml</DependentUpon>
+    </Compile>
     <Compile Include="OPCClient\OPCWorker.cs" />
+    <Compile Include="OperativeChart\IDDOperativeChart.cs" />
     <Compile Include="Properties\AssemblyInfo.cs">
       <SubType>Code</SubType>
     </Compile>
@@ -147,12 +193,38 @@
   <ItemGroup>
     <None Include="App.config" />
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <BootstrapperPackage Include=".NETFramework,Version=v4.6.2">
+      <Visible>False</Visible>
+      <ProductName>Microsoft .NET Framework 4.6.2 %28x86 и x64%29</ProductName>
+      <Install>true</Install>
+    </BootstrapperPackage>
+    <BootstrapperPackage Include="Microsoft.Net.Framework.3.5.SP1">
+      <Visible>False</Visible>
+      <ProductName>.NET Framework 3.5 SP1</ProductName>
+      <Install>false</Install>
+    </BootstrapperPackage>
+  </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\SCADA.Logger\SCADA.Logger.csproj">
       <Project>{f2c72fb5-ef3d-4a27-ade0-53a9e4051690}</Project>
       <Name>SCADA.Logger</Name>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup />
+  <ItemGroup>
+    <Resource Include="ammeter.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Resources\Img\016-ammeter.png" />
+    <Resource Include="Resources\Img\ammeter.ico" />
+    <Resource Include="Resources\Img\checked.png" />
+    <Resource Include="Resources\Img\error.png" />
+    <Resource Include="Resources\Img\info.png" />
+    <Resource Include="Resources\Img\question-mark.png" />
+    <Resource Include="Resources\Img\warning.png" />
+    <Resource Include="Resources\Img\zoom-in.png" />
+    <Resource Include="Resources\Img\zoom-out.png" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

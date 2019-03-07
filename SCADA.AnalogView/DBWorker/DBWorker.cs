@@ -6,6 +6,8 @@ using System.Threading.Tasks;
 using System.Data;
 using System.Data.SqlClient;
 
+
+using SCADA.AnalogView.DialogWindows;
 using SCADA.AnalogView.AnalogParametrs;
 using SCADA.AnalogView.AnalogParametrs.AnalogInterfaces;
 using SCADA.Logging;
@@ -115,8 +117,8 @@ namespace SCADA.AnalogView
                 while (reader.Read())               // Чтение всей выборки
                 {
                     Logger.AddMessages("Переописание уставок из базы данных");
-
                     // ------------------------ Чтение общих параметров ---------------------------------
+                    Logger.AddMessages("Чтение общих параметров");
                     commonParam.DBIndex = (uint)(int)reader["index"];           // двойное преобразование потому-что в базе лежат в интах, хотя логичнее в уинтах
                     commonParam.ControllerIndex = (uint)(int)reader["controller_index"];
                     commonParam.Name = reader["DESCRIPTION"] is DBNull ? "" : (string)reader["DESCRIPTION"];
@@ -127,6 +129,7 @@ namespace SCADA.AnalogView
 
                     // ----------------------- Чтение уставок ------------------------------------------
                     // --------------- Технологические --------------------
+                    Logger.AddMessages("Переописание технологических уставок");
                     uint CtrlUst = (uint)(short)reader["CtrlUst"];
 
                     List<UstValue> ustValues = new List<UstValue>(12);
@@ -139,51 +142,53 @@ namespace SCADA.AnalogView
                         ustName = reader.GetValue(38 - i) is DBNull ? "" : reader.GetString(38 - i);
                         value = reader.GetValue(20 - i) is DBNull ? 0 : (float)reader.GetDouble(20 - i);
                         // создание нового экземпляра уставки
-                        ustValues.Add(new UstValue(value, used, ustName, commonParam.Egu, commonParam.format));
+                        ustValues.Add(new UstValue(value, used, ustName, commonParam.Egu, commonParam.format, (UstCode)i));
                     }
                     ustavkiContainer.UstValues = ustValues;             // переописание уставок в контейнер
 
+                    // --------------- Инженерные ------------------------------
+                    Logger.AddMessages("Переописание инженерных уставок");
                     ustavkiContainer.ADCMax = new UstValue(
                         reader["scale_max"] is DBNull ? 0 : (float)reader["scale_max"],
                         true,
-                        "Код АЦП максимальный", commonParam.AdcEgu, 3
+                        "Код АЦП максимальный", commonParam.AdcEgu, 3, UstCode.ADCMax
                           );
                     ustavkiContainer.ADCMin = new UstValue(
                         reader["scale_min"] is DBNull ? 0 : (float)reader["scale_min"],
                         true,
-                        "Код АЦП минимальный", commonParam.AdcEgu, 3
+                        "Код АЦП минимальный", commonParam.AdcEgu, 3, UstCode.ADCMin
                         );
                     ustavkiContainer.EMax = new UstValue(
                         reader["HL"] is DBNull ? 0 : (float)(double)reader["HL"],
                         true,
-                        "Технологический максимум", commonParam.Egu, commonParam.format
+                        "Технологический максимум", commonParam.Egu, commonParam.format, UstCode.EMax
                         );
                     ustavkiContainer.EMin = new UstValue(
                         reader["LL"] is DBNull ? 0 : (float)(double)reader["LL"],
                         true,
-                        "Технологический минимум", commonParam.Egu, commonParam.format
+                        "Технологический минимум", commonParam.Egu, commonParam.format, UstCode.EMin
                         );
                     ustavkiContainer.VPD = new UstValue(
                         reader["D_VPD"] is DBNull ? 0 : (float)(double)reader["D_VPD"],
                         true,
-                        "Верхний предел достоверности", commonParam.AdcEgu, 3
+                        "Верхний предел достоверности", commonParam.AdcEgu, 3, UstCode.VPD
                         );
                     ustavkiContainer.NPD = new UstValue(
                         reader["D_NPD"] is DBNull ? 0 : (float)(double)reader["D_NPD"],
                         true,
-                        "Нижний предел достоверности", commonParam.AdcEgu, 3
+                        "Нижний предел достоверности", commonParam.AdcEgu, 3, UstCode.NPD
                         );
                     ustavkiContainer.Hister = new UstValue(
                         reader["HISTER"] is DBNull ? 0 : (float)(double)reader["HISTER"],
                         true,
-                        "Гистерезис", commonParam.Egu, (byte)(commonParam.format + 1)
+                        "Гистерезис", commonParam.Egu, (byte)(commonParam.format + 1), UstCode.Hister
                         );
                 }
                 reader.Close();
             }
             catch (Exception e)
             {
-                throw new Exception($"При чтении уставок из базхы данных для тега - '{tag}' возникло исключение", e);
+                throw new Exception($"При чтении уставок из базы данных для тега - '{tag}' возникло исключение", e);
             }
             finally
             {
@@ -219,25 +224,28 @@ namespace SCADA.AnalogView
                                       "D_VPD = @VPD, " +
                                       "D_NPD = @NPD, " +
                                       "HISTER = @Hister " +
-                                      "WHERE index = @index ";
+                                      "WHERE [index] = @index ";
                 // создание параметров для запроса
                 // основные уставки
-                command.Parameters.Add(new SqlParameter("@EMax", ustavkiContainer.EMax));
-                command.Parameters.Add(new SqlParameter("@EMin", ustavkiContainer.EMin));
-                command.Parameters.Add(new SqlParameter("@ADCMax", ustavkiContainer.ADCMax));
-                command.Parameters.Add(new SqlParameter("@ADCMin", ustavkiContainer.ADCMin));
-                command.Parameters.Add(new SqlParameter("@VPD", ustavkiContainer.VPD));
-                command.Parameters.Add(new SqlParameter("@NPD", ustavkiContainer.NPD));
-                command.Parameters.Add(new SqlParameter("@Hister", ustavkiContainer.Hister));
+                command.Parameters.Add(new SqlParameter("@EMax", ustavkiContainer.EMax.Value));
+                command.Parameters.Add(new SqlParameter("@EMin", ustavkiContainer.EMin.Value));
+                command.Parameters.Add(new SqlParameter("@ADCMax", ustavkiContainer.ADCMax.Value));
+                command.Parameters.Add(new SqlParameter("@ADCMin", ustavkiContainer.ADCMin.Value));
+                command.Parameters.Add(new SqlParameter("@VPD", ustavkiContainer.VPD.Value));
+                command.Parameters.Add(new SqlParameter("@NPD", ustavkiContainer.NPD.Value));
+                command.Parameters.Add(new SqlParameter("@Hister", ustavkiContainer.Hister.Value));
                 // технологические уставки
                 for (int i = 0; i < 12; i++)
                 {
-                    command.Parameters.Add(new SqlParameter($"@UST{i + 1}", ustavkiContainer.UstValues[i]));
+                    command.Parameters.Add(new SqlParameter($"@UST{i + 1}", ustavkiContainer.UstValues[i].Value));
                 }
-                command.Parameters.Add(new SqlParameter("@index", commonParams.DBIndex));
+                command.Parameters.Add(new SqlParameter("@index", (int)commonParams.DBIndex));
 
                 // выполнение запроса
                 command.ExecuteNonQuery();
+                command.Parameters.Clear();         // Очищаем список параметров для возможности повторной записи
+
+                Logger.AddMessages($"Выполнена запись уставок в базу данных {connection.Database}" );
             }
             catch (Exception e)
             {

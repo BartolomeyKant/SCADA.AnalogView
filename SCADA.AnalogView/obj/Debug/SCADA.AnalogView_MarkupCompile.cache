@@ -10,11 +10,11 @@ none
 false
 DEBUG;TRACE
 Z:\Documents\Programming\C#\SCADA.AnalogView\SCADA.AnalogView\SCADA.AnalogView\App.xaml
-11151548125
+3-935897091
 
-22308528475
-19-1116053563
-MainWindow.xaml;
+36-905490797
+20-851079499
+DialogWindows\DialogWindow.xaml;MainWindow.xaml;DialogWindows\MessageWindow.xaml;
 
 False
 

@@ -47,13 +47,16 @@ namespace SCADA.AnalogView.AnalogParametrs
 
         bool CompareValues(UstValue one, UstValue another)
         {
-            if (one.CompareTo(another) != 0)
+            if (one.CompareTo(another) != 0)            // если значения не равны
             {
                 Logger.AddMessages($"Уставка {one.UstName} имеет различное значение в контроллере и в архиве");
                 one.Different = true;
                 another.Different = true;
-                one.OldValue = another.Value;
-                another.OldValue = one.Value;
+                one.DiffValue = another.Value;
+                another.DiffValue = one.Value;
+                // обновление отображения значений
+                another.UpdateValue();
+                one.UpdateValue();
                 return true;
             }
             return false;
@@ -92,6 +95,26 @@ namespace SCADA.AnalogView.AnalogParametrs
                 throw new Exception("При сравнении уставок возникло исключение", e);
             }
             return flDifferent;
+        }
+
+        /// <summary>
+        /// Сброс флагов сотосния уставок
+        /// </summary>
+        public void ClearState()
+        {
+            for(int i =0; i < 12; i++)
+            {
+                UstValues[i].Changed = false;
+                UstValues[i].Different = false;
+                UstValues[i].UpdateValue();
+            }
+            ADCMax.Changed = false; ADCMax.Different = false; ADCMax.UpdateValue();
+            ADCMin.Changed = false; ADCMin.Different = false; ADCMin.UpdateValue();
+            EMax.Changed = false; EMax.Different = false; EMax.UpdateValue();
+            EMin.Changed = false; EMin.Different = false; EMin.UpdateValue();
+            VPD.Changed = false; VPD.Different = false; VPD.UpdateValue();
+            NPD.Changed = false; NPD.Different = false; NPD.UpdateValue();
+            Hister.Changed = false; Hister.Different = false; Hister.UpdateValue();
         }
     }
 }

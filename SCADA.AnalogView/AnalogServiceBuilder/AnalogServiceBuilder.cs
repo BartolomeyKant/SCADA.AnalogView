@@ -19,9 +19,7 @@ namespace SCADA.AnalogView
         OPCDAWorker opcDAWorker;
         IPLCAnalogUstavki IAnalogServiceBuilder.PLCUstavki => opcDAWorker;
 
-        IPLCAnalogValueReader IAnalogServiceBuilder.PLCValueReader => opcDAWorker;
-
-        IPLCAnalogValueWriter IAnalogServiceBuilder.PLCValueWriter => opcDAWorker;
+        IPLCAnalogValue IAnalogServiceBuilder.PLCValue => opcDAWorker;
 
         public AnalogServiceBuilder(ConfigurationWorker configuration)
         {

@@ -23,6 +23,7 @@ namespace SCADA.AnalogView
         AnalogViewModel analogView = null;
 
         HistoricalData histData = null;
+        DataView histView = null;
 
         public MainWindow()
         {
@@ -81,7 +82,8 @@ namespace SCADA.AnalogView
                 MaxHistoricalPoints = 2000,                    // максимальное количество точек
                 MaxHistoricalTimeDuration = 600,               // максимальный промеэуток времени cек
                 HistoricalUpdateTime = 500,                    // время обновления тегов при подписке мсек
-                HistorianTagName = "Fix.PLC!arAIValue[x]"      // тег в хисториан
+                HistorianTagName = "Fix.PLC!arAIValue[x]",      // тег в хисториан
+                ChartUpdateTime = 1000                          // время обновления чарта
     };
 
             // инциализация логгера
@@ -138,6 +140,17 @@ namespace SCADA.AnalogView
             try
             {
                 histData = new HistoricalData(new HistorianServiceBuilder(config, analogController), config);
+            }
+            catch (Exception e)
+            {
+                Logger.AddError(e);
+                return;
+            }
+
+            // =============== создание объектов для отображения исторических данных
+            try
+            {
+                histView = new DataView(new IDDOperativeChart(HPlotter), config, analogController, histData);
             }
             catch (Exception e)
             {

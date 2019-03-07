@@ -96,7 +96,7 @@ namespace SCADA.AnalogView
                 {
                     if (i < MaxPointCount)          //берем не больше максимального числа точек
                     {
-                        points[i] = new HistoricalDataPoint((float)dataSet[TagName].GetValue(i), dataSet[TagName].GetTime(i),
+                        points[i] = new HistoricalDataPoint((float)dataSet[TagName].GetValue(i), dataSet[TagName].GetTime(i).ToLocalTime(),
                                                             (dataSet[TagName].GetQuality(i).IsGood()) ? HistDataQuality.Good : HistDataQuality.Bad);
                     }
                 }
@@ -140,7 +140,7 @@ namespace SCADA.AnalogView
             // переописание новых значений в массив
              for (int i = 0; i < values.Count; i++)
             {
-                points[i] = new HistoricalDataPoint((float)values[i].Value, values[i].Time,
+                points[i] = new HistoricalDataPoint((float)values[i].Value, values[i].Time.ToLocalTime(),
                                                     values[i].Quality.IsGood ? HistDataQuality.Good : HistDataQuality.Bad);
             }
             DataChangeHandler?.Invoke(points);      // вызов внешнго метода для обновления данных

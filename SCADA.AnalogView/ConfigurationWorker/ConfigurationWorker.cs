@@ -34,5 +34,7 @@ namespace SCADA.AnalogView
         public uint MaxHistoricalTimeDuration { get; set; }
         public uint HistoricalUpdateTime { get; set; }
         public string HistorianTagName { get; set; }
+
+        public uint ChartUpdateTime { get; set; }
     }
 }

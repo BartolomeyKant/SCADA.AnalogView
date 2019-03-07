@@ -150,6 +150,7 @@
     <Compile Include="HistoriacalData\HistoricalInterfaces\IHistGetData.cs" />
     <Compile Include="HistoriacalData\HistoricalInterfaces\IHistGetSubscribe.cs" />
     <Compile Include="HistoriacalData\HistoricalInterfaces\IHistoricalServiceBuilder.cs" />
+    <Compile Include="HistoriacalData\HistoricalInterfaces\IHistoricalView.cs" />
     <Compile Include="HistorianServiceBuilder\HistorianServiceBuilder.cs" />
     <Compile Include="HistorianWorker\HistorianWorker.cs" />
     <Compile Include="MainWindow.xaml.cs">
@@ -166,6 +167,7 @@
       <DependentUpon>MessageWindow.xaml</DependentUpon>
     </Compile>
     <Compile Include="OPCClient\OPCWorker.cs" />
+    <Compile Include="OperativeChart\IDDOperativeChart.cs" />
     <Compile Include="Properties\AssemblyInfo.cs">
       <SubType>Code</SubType>
     </Compile>

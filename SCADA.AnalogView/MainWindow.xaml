@@ -3,6 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:d3 ="clr-namespace:InteractiveDataDisplay.WPF;assembly=ntvl.InteractiveDataDisplay.WPF"
         xmlns:local="clr-namespace:SCADA.AnalogView"
         mc:Ignorable="d"
         Title="Просмотр значений аналогового параметра" MinHeight="500" MaxHeight ="800"  MinWidth="800" MaxWidth="1000" WindowStyle="ThreeDBorderWindow" ResizeMode="CanResizeWithGrip" Loaded="Window_Loaded" SizeToContent="WidthAndHeight">
@@ -140,12 +141,49 @@
                     <RowDefinition Height="0.8*"/>
                     <RowDefinition Height="0.2*"/>
                 </Grid.RowDefinitions>
-                <Grid Grid.Row="0" Margin="5,5">
+                <!-- Поле для отображения графика -->
+                <Grid Grid.Row="0" Margin="5,5" MinHeight="200">
 
                     <Border Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2" Grid.RowSpan="3" BorderThickness="1" BorderBrush="Gray" />
+                    
+                    <d3:Figure x:Name="HPlotter" Padding="10" >
+                        <d3:Figure.Resources>
+                            <d3:DateLabelProvider x:Key="DateLabels" Format="HH-mm-ss" />
+                            <Style x:Key="MainLineChart">
+                                <Setter Property="d3:LineGraph.Stroke" Value="Blue" />
+                                <Setter Property="d3:LineGraph.StrokeThickness" Value="3" />
+                                <Setter Property="d3:LineGraph.ShowMarkers" Value="false" />
+                                <Setter Property="d3:LineGraph.Margin" Value="0,10,20,0" />
+                            </Style>
+                            <Style x:Key="WarningLine">
+                                <Setter Property="d3:LineGraph.Stroke" Value="{StaticResource YellowColor}" />
+                                <Setter Property="d3:LineGraph.StrokeDashArray" Value="5" />
+                                <Setter Property="d3:LineGraph.ShowMarkers" Value="false" />
+                                <Setter Property="d3:LineGraph.Margin" Value="0,10,20,0" />
+                            </Style>
+                            <Style x:Key="ErrorLine">
+                                <Setter Property="d3:LineGraph.Stroke" Value="{StaticResource RedColor}" />
+                                <Setter Property="d3:LineGraph.StrokeThickness" Value="2" />
+                                <Setter Property="d3:LineGraph.StrokeDashArray" Value="5" />
+                                <Setter Property="d3:LineGraph.ShowMarkers" Value="false" />
+                                <Setter Property="d3:LineGraph.Margin" Value="0,10,20,0" />
+                            </Style>
+                            <Style x:Key="LimitLine">
+                                <Setter Property="d3:LineGraph.Stroke" Value="Black" />
+                                <Setter Property="d3:LineGraph.Visibility" Value="Hidden" />
+                                <Setter Property="d3:LineGraph.ShowMarkers" Value="false" />
+                                <Setter Property="d3:LineGraph.Margin" Value="0,10,20,0" />
+                            </Style>
+                        </d3:Figure.Resources>
+                        
+                        <d3:PlotAxis AxisOrientation="Left"  d3:Figure.Placement="Left" Margin="0,10,0,0"/>
+                        <d3:PlotAxis AxisOrientation="Bottom" d3:Figure.Placement="Bottom" Margin="0,0,20,0" LabelProvider="{StaticResource DateLabels}"/>
+                        <d3:LineGraph x:Name="MainLineGraph" Style="{StaticResource MainLineChart}"/>
+                        <d3:MouseNavigation Margin="0,10,20,0"/>
+                    </d3:Figure>
 
                 </Grid>
-                <Grid Grid.Row="1" Margin="5,5">
+                <Grid Grid.Row="1" Margin="5,5"  MinHeight="100">
 
                     <Border Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2" Grid.RowSpan="3" BorderThickness="1" BorderBrush="Gray" />
 
